@@ -2,6 +2,10 @@ from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
 
+# https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies
+A0 = 21
+NAMES = ('A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#')
+
 
 @dataclass
 class MusicBox:
@@ -20,10 +24,10 @@ class MusicBox:
             pitch=args.pitch,
         )
 
-    def get_note_name(self, val: float) -> str:
-        mod = val % 12
-        octave = (val / 12) - 2
-        letter = f"[{mod}]"
+    def get_note_name(self, val: int) -> str:
+        mod = (val - A0) % 12
+        letter = NAMES[mod]
+        octave = int(val / 12) - 2
         return f"{letter}{octave}"
 
 

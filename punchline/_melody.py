@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from ._music_box import MusicBox
 
 
-@dataclass(frozen=True)
+@dataclass
 class Sound:
     note: int
     time: int
@@ -46,7 +46,7 @@ class Melody:
 
     @cached_property
     def sounds(self) -> list[Sound]:
-        notes = []
+        sounds: list[Sound] = []
         with MidiFile(str(self.path)) as midi_file:
             message: Message
             for i, track in enumerate(midi_file.tracks):
@@ -62,8 +62,16 @@ class Melody:
                         continue
                     if message.velocity == 0:
                         continue
-                    notes.append(Sound(note=message.note, time=time))
-        return sorted(notes, key=lambda note: note.time)
+                    sound = Sound(note=message.note, time=time)
+                    sounds.append(sound)
+
+        # skip silence at the beginning
+        min_time = min(sound.time for sound in sounds)
+        for sound in sounds:
+            sound.time -= min_time
+
+        sounds.sort(key=lambda sound: sound.time)
+        return sounds
 
     @cached_property
     def notes_use(self) -> dict[int, int]:
