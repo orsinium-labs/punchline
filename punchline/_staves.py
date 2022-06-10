@@ -15,8 +15,8 @@ def mm(val: float) -> str:
     return f"{val}mm"
 
 
-def cross(dwg: svgwrite.Drawing, size: float, x: float, y: float) -> None:
-    hs = size / 2.0
+def cross(dwg: svgwrite.Drawing, x: float, y: float) -> None:
+    hs = 2.5
     dwg.add(
         dwg.line(
             (mm(y - hs), mm(x)),
@@ -44,7 +44,6 @@ class Staves:
     marker_offset: float = 6.
     marker_offset_top: float = 0.
     marker_offset_bottom: float = 0.
-    marker_size: float = 5.
     margin: float = 20.
     font_size: float = 1.
     divisor: float = 67.
@@ -57,7 +56,6 @@ class Staves:
         parser.add_argument('--marker-offset', type=float, default=cls.marker_offset)
         parser.add_argument('--marker-offset-top', type=float, default=cls.marker_offset_top)
         parser.add_argument('--marker-offset-bottom', type=float, default=cls.marker_offset_bottom)
-        parser.add_argument('--marker-size', type=float, default=cls.marker_size)
         parser.add_argument('--margin', type=float, default=cls.margin)
         parser.add_argument('--divisor', type=float, default=cls.divisor)
         parser.add_argument('--font-size', type=float, default=cls.font_size)
@@ -73,7 +71,6 @@ class Staves:
             marker_offset=args.marker_offset,
             marker_offset_top=args.marker_offset_top,
             marker_offset_bottom=args.marker_offset_bottom,
-            marker_size=args.marker_size,
             margin=args.margin,
             divisor=args.divisor,
             font_size=args.font_size,
@@ -141,15 +138,18 @@ class Staves:
         offset_time = ((page * self.staves_per_page) + stave) * self.max_stave_length
 
         line_offset = (stave * (self.stave_width)) + self.margin
-        cross(dwg, self.marker_size, line_offset - mark_top, self.margin + self.max_stave_length)
         cross(
             dwg,
-            self.marker_size,
+            line_offset - mark_top,
+            self.margin + self.max_stave_length,
+        )
+        cross(
+            dwg,
             line_offset + self.stave_width - self.margin + mark_btm,
             self.margin + self.max_stave_length,
         )
-        cross(dwg, self.marker_size, line_offset - mark_top, self.margin)
-        cross(dwg, self.marker_size, line_offset + self.stave_width - self.margin + mark_btm, self.margin)
+        cross(dwg, line_offset - mark_top, self.margin)
+        cross(dwg, line_offset + self.stave_width - self.margin + mark_btm, self.margin)
         text = dwg.text(
             "STAVE {} - {}".format((page * self.staves_per_page) + stave, self.output_path.name),
             insert=(mm(self.margin * 2), mm(line_offset + self.stave_width - self.margin + self.marker_offset)),
@@ -183,13 +183,13 @@ class Staves:
                 # TODO: handle missed notes
                 note_pos = 0
                 fill = "red"
-            sound_time = (sound.time / self.divisor) - offset_time
+            sound_offset = (sound.time / self.divisor) - offset_time
 
-            if sound_time > self.max_stave_length:
+            if sound_offset > self.max_stave_length:
                 break
             circle = dwg.circle(
                 (
-                    mm(sound_time + self.margin),
+                    mm(sound_offset + self.margin),
                     mm((note_pos * self.music_box.pitch) + line_offset),
                 ),
                 "1mm",
