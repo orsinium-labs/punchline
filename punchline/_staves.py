@@ -109,7 +109,7 @@ class Staves:
             offset = self._write_page(page=page, offset=offset)
 
     def write_stats(self, stream: TextIO) -> None:
-        print(f"sounds: {len(self.melody.notes)}", file=stream)
+        print(f"sounds: {len(self.melody.sounds)}", file=stream)
         print(f"notes: {len(self.melody.notes_use)}", file=stream)
         min_dist = self.melody.min_distance / self.divisor
         print(f"minimum note distance: {round(min_dist, 2)}", file=stream)
@@ -117,7 +117,7 @@ class Staves:
         print(f"percentage hit: {round(self.melody.best_transpose[1] * 100)}%", file=stream)
         if self.melody.best_transpose[1] == 1:
             print("^ PERFECT!")
-        zero_sounds = sum(sound.time == 0 for sound in self.melody.notes)
+        zero_sounds = sum(sound.time == 0 for sound in self.melody.sounds)
         if zero_sounds > 2:
             percent = round(zero_sounds / self.melody.sounds_count * 100)
             print(f"sounds without time: {zero_sounds} ({percent}%)", file=stream)
@@ -175,21 +175,21 @@ class Staves:
             dwg.add(text)
 
         trans = self.melody.best_transpose[0]
-        for note in self.melody.notes[offset:]:
+        for sound in self.melody.sounds[offset:]:
             fill = "black"
             try:
-                note_pos = self.music_box.note_data.index(note.note + trans)
+                note_pos = self.music_box.note_data.index(sound.note + trans)
             except ValueError:
                 # TODO: handle missed notes
                 note_pos = 0
                 fill = "red"
-            note_time = (note.time / self.divisor) - offset_time
+            sound_time = (sound.time / self.divisor) - offset_time
 
-            if note_time > self.max_stave_length:
+            if sound_time > self.max_stave_length:
                 break
             circle = dwg.circle(
                 (
-                    mm(note_time + self.margin),
+                    mm(sound_time + self.margin),
                     mm((note_pos * self.music_box.pitch) + line_offset),
                 ),
                 "1mm",

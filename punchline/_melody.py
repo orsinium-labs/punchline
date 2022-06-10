@@ -14,9 +14,9 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
-class Note:
+class Sound:
     note: int
-    time: float
+    time: int
 
 
 @dataclass
@@ -26,7 +26,6 @@ class Melody:
     transpose_lower: int = -100
     transpose_upper: int = 100
     tracks: frozenset = frozenset(range(16))
-    debug: bool = False
 
     @classmethod
     def init_parser(cls, parser: ArgumentParser) -> None:
@@ -46,7 +45,7 @@ class Melody:
         )
 
     @cached_property
-    def notes(self) -> list[Note]:
+    def sounds(self) -> list[Sound]:
         notes = []
         with MidiFile(str(self.path)) as midi_file:
             message: Message
@@ -63,20 +62,20 @@ class Melody:
                         continue
                     if message.velocity == 0:
                         continue
-                    notes.append(Note(note=message.note, time=time))
+                    notes.append(Sound(note=message.note, time=time))
         return sorted(notes, key=lambda note: note.time)
 
     @cached_property
     def notes_use(self) -> dict[int, int]:
         """How many times each note appears in the melody.
         """
-        return dict(Counter(note.note for note in self.notes))
+        return dict(Counter(sounds.note for sounds in self.sounds))
 
     @cached_property
     def sounds_count(self) -> int:
         """How many sounds in total there are in the melody.
         """
-        return len(self.notes)
+        return len(self.sounds)
 
     def count_available_sounds(self, trans: int) -> int:
         """How many notes from the melody fit in the music box.
@@ -88,11 +87,15 @@ class Melody:
         return count
 
     @cached_property
-    def max_time(self) -> float:
-        return max(note.time for note in self.notes)
+    def max_time(self) -> int:
+        """The tick when the last note plays.
+        """
+        return max(sounds.time for sounds in self.sounds)
 
     @cached_property
     def best_transpose(self) -> tuple[int, float]:
+        """Transposition that fits most of the notes.
+        """
         transpose = range(self.transpose_lower, self.transpose_upper)
         best_transpose: tuple[int, float]
         best_transpose = (0, 0)
@@ -101,37 +104,22 @@ class Melody:
             percen = avail / float(self.sounds_count)
             if percen == 1:
                 return (trans, 1)
-
             if percen > best_transpose[1]:
-                if self.debug:
-                    unavail = {
-                        self.music_box.get_note_name(note): freq
-                        for note, freq in self.notes_use.items()
-                        if note + trans not in self.music_box.note_data
-                    }
-                    print("Transposition Candidate Report")
-                    print("Transposition: {}".format(trans))
-                    print("Total Notes: {}".format(self.sounds_count))
-                    print("Notes OK: {}".format(avail))
-                    print("Distinct Notes Missing: {}".format(len(unavail)))
-                    print("Total Notes Missing: {}".format(self.sounds_count - avail))
-                    print("Unavailables: {}".format(unavail))
-                    print("========================================")
                 best_transpose = (trans, percen)
         return best_transpose
 
     @cached_property
     def min_distance(self) -> float:
-        """Find the shortest time between 2 consequentive sounds.
+        """The shortest time between 2 consequentive sounds.
         """
         min_distances: dict[int, Distance] = {}
-        for note in self.notes:
-            distance = min_distances.setdefault(note.note, Distance(note.time))
-            diff = note.time - distance.time
+        for sound in self.sounds:
+            distance = min_distances.setdefault(sound.note, Distance(sound.time))
+            diff = sound.time - distance.time
             if math.isclose(diff, 0):
                 continue
             distance.diff = min(distance.diff, diff)
-            distance.time = note.time
+            distance.time = sound.time
         if not min_distances:
             return math.inf
         return min(d.diff for d in min_distances.values())
@@ -139,5 +127,5 @@ class Melody:
 
 @dataclass
 class Distance:
-    time: float
+    time: int
     diff: float = math.inf
