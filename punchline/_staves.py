@@ -111,32 +111,34 @@ class Staves:
     def write_stats(self, stream: TextIO) -> None:
         print(f"sounds: {len(self.melody.notes)}", file=stream)
         print(f"notes: {len(self.melody.notes_use)}", file=stream)
-        print(f"minimum note distance: {self.melody.min_distance / self.divisor}", file=stream)
+        min_dist = self.melody.min_distance / self.divisor
+        print(f"minimum note distance: {round(min_dist, 2)}", file=stream)
         print(f"transpose: {self.melody.best_transpose[0]}", file=stream)
         print(f"percentage hit: {round(self.melody.best_transpose[1] * 100)}%", file=stream)
+        if self.melody.best_transpose[1] == 1:
+            print("^ PERFECT!")
+        zero_sounds = sum(sound.time == 0 for sound in self.melody.notes)
+        if zero_sounds > 2:
+            percent = round(zero_sounds / self.melody.sounds_count * 100)
+            print(f"sounds without time: {zero_sounds} ({percent}%)", file=stream)
         print(f"max length: {self.melody.max_time / self.divisor}", file=stream)
         print(f"max stave length: {self.max_stave_length}", file=stream)
         print(f"no staves: {self.no_staves_required}", file=stream)
         print(f"pages: {self.pages}", file=stream)
 
     def _write_page(self, page: int, offset: int) -> int:
-        print("Writing page {}..".format(page))
-
         file_path = self.output_path / f"{page}.svg"
         dwg = svgwrite.Drawing(str(file_path), size=(mm(self.page_width), mm(self.page_height)))
 
         for stave in range(self.staves_per_page):
             offset = self._write_stave(dwg=dwg, page=page, stave=stave, offset=offset)
         dwg.save()
-        if self.melody.best_transpose[1] != 1:
-            print("PERFECT TRANSPOSITION NOT FOUND!")
         return offset
 
     def _write_stave(self, dwg: svgwrite.Drawing, page: int, stave: int, offset: int) -> int:
         mark_top = self.marker_offset_top or self.marker_offset
         mark_btm = self.marker_offset_bottom or self.marker_offset
-        max_time = ((page * self.staves_per_page) + stave) * self.max_stave_length + self.max_stave_length
-        offset_time = max_time - self.max_stave_length
+        offset_time = ((page * self.staves_per_page) + stave) * self.max_stave_length
 
         line_offset = (stave * (self.stave_width)) + self.margin
         cross(dwg, self.marker_size, line_offset - mark_top, self.margin + self.max_stave_length)
@@ -172,24 +174,24 @@ class Staves:
             )
             dwg.add(text)
 
+        trans = self.melody.best_transpose[0]
         for note in self.melody.notes[offset:]:
+            fill = "black"
             try:
-                note_pos = self.music_box.note_data.index(note.note + self.melody.best_transpose[0])
-                fill = "black"
-            except Exception as e:
-                print(e)
-                for dta in self.music_box.note_data:
-                    if note.note + self.melody.best_transpose[0] > dta:
-                        continue
-                    break
-                note_pos = self.music_box.note_data.index(dta)
+                note_pos = self.music_box.note_data.index(note.note + trans)
+            except ValueError:
+                # TODO: handle missed notes
+                note_pos = 0
                 fill = "red"
             note_time = (note.time / self.divisor) - offset_time
 
             if note_time > self.max_stave_length:
                 break
             circle = dwg.circle(
-                (mm(note_time + self.margin), mm((note_pos * self.music_box.pitch) + line_offset)),
+                (
+                    mm(note_time + self.margin),
+                    mm((note_pos * self.music_box.pitch) + line_offset),
+                ),
                 "1mm",
                 fill=fill,
             )

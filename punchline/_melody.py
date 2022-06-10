@@ -7,20 +7,16 @@ from collections import Counter
 import math
 from typing import TYPE_CHECKING
 
-from mido import MidiFile, MidiTrack, Message
+from mido import MidiFile, Message
 
 if TYPE_CHECKING:
     from ._music_box import MusicBox
 
 
-@dataclass
+@dataclass(frozen=True)
 class Note:
     note: int
     time: float
-
-    @classmethod
-    def from_message(cls, m: Message) -> Note:
-        return cls(note=m.note, time=m.time)
 
 
 @dataclass
@@ -37,6 +33,7 @@ class Melody:
         parser.add_argument('--input', type=Path, required=True)
         parser.add_argument('--transpose-lower', type=int, default=cls.transpose_lower)
         parser.add_argument('--transpose-upper', type=int, default=cls.transpose_upper)
+        parser.add_argument('--tracks', nargs='*', type=int, default=[])
 
     @classmethod
     def from_args(cls, args: Namespace, *, music_box: MusicBox) -> Melody:
@@ -44,6 +41,7 @@ class Melody:
             path=args.input,
             transpose_lower=args.transpose_lower,
             transpose_upper=args.transpose_upper,
+            tracks=frozenset(args.tracks) or cls.tracks,
             music_box=music_box,
         )
 
@@ -51,17 +49,21 @@ class Melody:
     def notes(self) -> list[Note]:
         notes = []
         with MidiFile(str(self.path)) as midi_file:
-            track: MidiTrack
             message: Message
             for i, track in enumerate(midi_file.tracks):
                 if i not in self.tracks:
                     continue
+                print(f'reading track #{i} "{track.name}"...')
+                time = 0
                 for message in track:
+                    time += message.time
+                    if message.is_meta:
+                        continue
                     if message.type != "note_on":
                         continue
                     if message.velocity == 0:
                         continue
-                    notes.append(Note.from_message(message))
+                    notes.append(Note(note=message.note, time=time))
         return sorted(notes, key=lambda note: note.time)
 
     @cached_property
@@ -98,7 +100,6 @@ class Melody:
             avail = self.count_available_sounds(trans)
             percen = avail / float(self.sounds_count)
             if percen == 1:
-                print("PERFECT TRANSPOSITION FOUND")
                 return (trans, 1)
 
             if percen > best_transpose[1]:
