@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterator
 
 if TYPE_CHECKING:
     from argparse import _ArgumentGroup, Namespace
@@ -41,7 +41,14 @@ class MusicBox:
             padding_bottom=args.padding_bottom,
         )
 
-    def get_note_name(self, val: int) -> str:
+    @property
+    def note_names(self) -> Iterator[str]:
+        """Sequence of all notes names that are presented on the music box.
+        """
+        for note_number in self.note_data:
+            yield self._get_note_name(note_number)
+
+    def _get_note_name(self, val: int) -> str:
         mod = (val - A0) % 12
         letter = NAMES[mod]
         octave = int(val / 12) - 2

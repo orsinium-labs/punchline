@@ -156,7 +156,7 @@ class Melody:
 
     @cached_property
     def min_distance(self) -> float:
-        """The shortest time between 2 consequentive sounds.
+        """The shortest time between 2 consequentive sounds (in ticks).
         """
         min_distances: dict[int, Distance] = {}
         for sound in self.sounds:

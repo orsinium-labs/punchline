@@ -49,6 +49,7 @@ class Staves:
     divisor: float = 67.
     page_width: float = 297.
     page_height: float = 210.
+    name: str = "melody"
 
     @classmethod
     def init_parser(cls, parser: _ArgumentGroup) -> None:
@@ -60,7 +61,10 @@ class Staves:
             '--margin', type=float, default=cls.margin,
             help='distance (in mm) to keep between stripes and page borders',
         )
-        parser.add_argument('--divisor', type=float, default=cls.divisor)
+        parser.add_argument(
+            '--divisor', type=float, default=cls.divisor,
+            help='how densly the holes should be packed (ticks/mm)',
+        )
         parser.add_argument(
             '--font-size', type=float, default=cls.font_size,
             help='size of all text on the page (in mm)',
@@ -85,11 +89,12 @@ class Staves:
             font_size=args.font_size,
             page_width=args.page_width,
             page_height=args.page_height,
+            name=args.input.stem,
         )
 
     @cached_property
     def stave_width(self) -> float:
-        """How wide each stave (stripe) is.
+        """How wide each stave (stripe) is in mm.
         """
         return (len(self.music_box.note_data) - 1) * self.music_box.pitch + self.margin
 
@@ -101,13 +106,13 @@ class Staves:
 
     @cached_property
     def stave_length(self) -> float:
-        """How long is each stave (stripe).
+        """How long is each stave (stripe) in mm.
         """
         return self.page_width - (self.margin * 2)
 
     @cached_property
     def total_length(self) -> float:
-        """The summary length of all stripes to be generated.
+        """The summary length of all stripes to be generated in mm.
         """
         return self.melody.max_time / self.divisor
 
@@ -162,12 +167,13 @@ class Staves:
         return offset
 
     def _write_stave(self, dwg: svg.SVG, page: int, stave: int, offset: int) -> int:
-        offset_time = ((page * self.staves_per_page) + stave) * self.stave_length
         line_offset = (stave * (self.stave_width)) + self.margin
-        padding_top = self.music_box.padding_top
-        padding_bottom = self.music_box.padding_bottom
         if dwg.elements is None:
             dwg.elements = []
+
+        # draw crosses at the coners of stave
+        padding_top = self.music_box.padding_top
+        padding_bottom = self.music_box.padding_bottom
         dwg.elements.extend(itertools.chain(
             cross(
                 x=line_offset - padding_top,
@@ -186,16 +192,20 @@ class Staves:
                 y=self.margin,
             ),
         ))
-        stave_crossnumber = (page * self.staves_per_page) + stave
+
+        # draw caption (melody name and stave number)
+        stave_crossnumber = (page * self.staves_per_page) + stave + 1
         text = svg.Text(
-            text=f"STAVE {stave_crossnumber} - {self.output_path.name}",
+            text=f"{self.name} #{stave_crossnumber}",
             x=mm(self.margin * 2),
             y=mm(line_offset + self.stave_width - self.margin + padding_bottom),
             fill="blue",
             font_size=mm(self.font_size),
         )
         dwg.elements.append(text)
-        for i, note_number in enumerate(self.music_box.note_data):
+
+        # draw lines
+        for i, note_name in enumerate(self.music_box.note_names):
             line_x = (i * self.music_box.pitch) + line_offset
             line = svg.Line(
                 x1=mm(self.margin),
@@ -207,7 +217,7 @@ class Staves:
             )
             dwg.elements.append(line)
             text = svg.Text(
-                text=self.music_box.get_note_name(note_number),
+                text=note_name,
                 x=mm(-2 + self.margin),
                 y=mm(line_x + self.font_size / 2),
                 fill="red",
@@ -215,6 +225,8 @@ class Staves:
             )
             dwg.elements.append(text)
 
+        # draw cut circles
+        offset_time = ((page * self.staves_per_page) + stave) * self.stave_length
         trans = self.melody.best_transpose.shift
         for sound in self.melody.sounds[offset:]:
             fill = "black"
