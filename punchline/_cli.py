@@ -11,9 +11,12 @@ def main(argv: list[str], stream: TextIO) -> int:
     parser = ArgumentParser(
         description='Generate SVG staves for music box from a MIDI file.',
     )
-    Melody.init_parser(parser)
-    Staves.init_parser(parser)
-    MusicBox.init_parser(parser)
+    group = parser.add_argument_group('input')
+    Melody.init_parser(group)
+    group = parser.add_argument_group('output')
+    Staves.init_parser(group)
+    group = parser.add_argument_group('instrument')
+    MusicBox.init_parser(group)
     args = parser.parse_args(argv)
     music_box = MusicBox.from_args(args)
     melody = Melody.from_args(args, music_box=music_box)

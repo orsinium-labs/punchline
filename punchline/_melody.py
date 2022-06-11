@@ -1,5 +1,4 @@
 from __future__ import annotations
-from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
@@ -10,6 +9,7 @@ from typing import TYPE_CHECKING, Iterable
 from mido import MidiFile, Message
 
 if TYPE_CHECKING:
+    from argparse import _ArgumentGroup, Namespace
     from ._music_box import MusicBox
 
 
@@ -41,10 +41,10 @@ class Melody:
     tracks: frozenset = frozenset(range(16))
 
     @classmethod
-    def init_parser(cls, parser: ArgumentParser) -> None:
+    def init_parser(cls, parser: _ArgumentGroup) -> None:
         parser.add_argument(
             '--input', type=Path, required=True,
-            help='path to the input MIDI (*mid) file',
+            help='path to the input MIDI (*.mid) file',
         )
         parser.add_argument(
             '--transpose-lower', type=int, default=cls.transpose_lower,

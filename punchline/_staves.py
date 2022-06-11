@@ -1,14 +1,16 @@
 from __future__ import annotations
-from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
 from functools import cached_property
 import math
 from pathlib import Path
-from typing import TextIO
+from typing import TYPE_CHECKING, TextIO
 
 import svgwrite
 from ._music_box import MusicBox
 from ._melody import Melody
+
+if TYPE_CHECKING:
+    from argparse import _ArgumentGroup, Namespace
 
 
 def mm(val: float) -> str:
@@ -41,8 +43,6 @@ class Staves:
     melody: Melody
 
     output_path: Path = Path('output')
-    padding_top: float = 6.
-    padding_bottom: float = 6.
     margin: float = 20.
     font_size: float = 1.
     divisor: float = 67.
@@ -50,18 +50,10 @@ class Staves:
     page_height: float = 210.
 
     @classmethod
-    def init_parser(cls, parser: ArgumentParser) -> None:
+    def init_parser(cls, parser: _ArgumentGroup) -> None:
         parser.add_argument(
             '--output', type=Path, default=cls.output_path,
             help='the directory to save generated SVG pages',
-        )
-        parser.add_argument(
-            '--padding-top', type=float, default=cls.padding_top,
-            help='the padding from the stripe top to the first line (in mm).',
-        )
-        parser.add_argument(
-            '--padding-bottom', type=float, default=cls.padding_bottom,
-            help='the padding from the stripe top to the first line (in mm).',
         )
         parser.add_argument(
             '--margin', type=float, default=cls.margin,
@@ -87,8 +79,6 @@ class Staves:
             music_box=melody.music_box,
             melody=melody,
             output_path=args.output,
-            padding_top=args.padding_top,
-            padding_bottom=args.padding_bottom,
             margin=args.margin,
             divisor=args.divisor,
             font_size=args.font_size,
@@ -170,22 +160,24 @@ class Staves:
     def _write_stave(self, dwg: svgwrite.Drawing, page: int, stave: int, offset: int) -> int:
         offset_time = ((page * self.staves_per_page) + stave) * self.stave_length
         line_offset = (stave * (self.stave_width)) + self.margin
+        padding_top = self.music_box.padding_top
+        padding_bottom = self.music_box.padding_bottom
         cross(
             dwg,
-            line_offset - self.padding_top,
+            line_offset - padding_top,
             self.margin + self.stave_length,
         )
         cross(
             dwg,
-            line_offset + self.stave_width - self.margin + self.padding_bottom,
+            line_offset + self.stave_width - self.margin + padding_bottom,
             self.margin + self.stave_length,
         )
-        cross(dwg, line_offset - self.padding_top, self.margin)
-        cross(dwg, line_offset + self.stave_width - self.margin + self.padding_bottom, self.margin)
+        cross(dwg, line_offset - padding_top, self.margin)
+        cross(dwg, line_offset + self.stave_width - self.margin + padding_bottom, self.margin)
         stave_crossnumber = (page * self.staves_per_page) + stave
         text = dwg.text(
             f"STAVE {stave_crossnumber} - {self.output_path.name}",
-            insert=(mm(self.margin * 2), mm(line_offset + self.stave_width - self.margin + self.padding_bottom)),
+            insert=(mm(self.margin * 2), mm(line_offset + self.stave_width - self.margin + padding_bottom)),
             fill="blue",
             font_size=mm(self.font_size),
         )
