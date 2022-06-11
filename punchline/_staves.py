@@ -1,11 +1,12 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from functools import cached_property
+import itertools
 import math
 from pathlib import Path
-from typing import TYPE_CHECKING, TextIO
+from typing import TYPE_CHECKING, Iterator, TextIO
 
-import svgwrite
+import svg
 from ._music_box import MusicBox
 from ._melody import Melody
 
@@ -13,27 +14,27 @@ if TYPE_CHECKING:
     from argparse import _ArgumentGroup, Namespace
 
 
-def mm(val: float) -> str:
-    return f"{val}mm"
+def mm(val: float) -> svg.Length:
+    return svg.Length(value=val, unit='mm')
 
 
-def cross(dwg: svgwrite.Drawing, x: float, y: float) -> None:
+def cross(x: float, y: float) -> Iterator[svg.Element]:
     hs = 2.5
-    dwg.add(
-        dwg.line(
-            (mm(y - hs), mm(x)),
-            (mm(y + hs), mm(x)),
-            stroke=svgwrite.rgb(0, 0, 0, "%"),
-            stroke_width=".1mm",
-        ),
+    yield svg.Line(
+        x1=mm(y - hs),
+        y1=mm(x),
+        x2=mm(y + hs),
+        y2=mm(x),
+        stroke="black",
+        stroke_width=mm(.1),
     )
-    dwg.add(
-        dwg.line(
-            (mm(y), mm(x - hs)),
-            (mm(y), mm(x + hs)),
-            stroke=svgwrite.rgb(0, 0, 0, "%"),
-            stroke_width=".1mm",
-        ),
+    yield svg.Line(
+        x1=mm(y),
+        y1=mm(x - hs),
+        x2=mm(y),
+        y2=mm(x + hs),
+        stroke="black",
+        stroke_width=mm(.1),
     )
 
 
@@ -149,55 +150,70 @@ class Staves:
         print(f"pages: {self.pages_count}", file=stream)
 
     def _write_page(self, page: int, offset: int) -> int:
-        file_path = self.output_path / f"{page}.svg"
-        dwg = svgwrite.Drawing(str(file_path), size=(mm(self.page_width), mm(self.page_height)))
-
+        canvas = svg.SVG(
+            width=mm(self.page_width),
+            height=mm(self.page_height),
+            xmlns="http://www.w3.org/2000/svg",
+        )
         for stave in range(self.staves_per_page):
-            offset = self._write_stave(dwg=dwg, page=page, stave=stave, offset=offset)
-        dwg.save()
+            offset = self._write_stave(canvas, page=page, stave=stave, offset=offset)
+        file_path = self.output_path / f"{page}.svg"
+        file_path.write_text(str(canvas))
         return offset
 
-    def _write_stave(self, dwg: svgwrite.Drawing, page: int, stave: int, offset: int) -> int:
+    def _write_stave(self, dwg: svg.SVG, page: int, stave: int, offset: int) -> int:
         offset_time = ((page * self.staves_per_page) + stave) * self.stave_length
         line_offset = (stave * (self.stave_width)) + self.margin
         padding_top = self.music_box.padding_top
         padding_bottom = self.music_box.padding_bottom
-        cross(
-            dwg,
-            line_offset - padding_top,
-            self.margin + self.stave_length,
-        )
-        cross(
-            dwg,
-            line_offset + self.stave_width - self.margin + padding_bottom,
-            self.margin + self.stave_length,
-        )
-        cross(dwg, line_offset - padding_top, self.margin)
-        cross(dwg, line_offset + self.stave_width - self.margin + padding_bottom, self.margin)
+        if dwg.elements is None:
+            dwg.elements = []
+        dwg.elements.extend(itertools.chain(
+            cross(
+                x=line_offset - padding_top,
+                y=self.margin + self.stave_length,
+            ),
+            cross(
+                x=line_offset + self.stave_width - self.margin + padding_bottom,
+                y=self.margin + self.stave_length,
+            ),
+            cross(
+                x=line_offset - padding_top,
+                y=self.margin,
+            ),
+            cross(
+                x=line_offset + self.stave_width - self.margin + padding_bottom,
+                y=self.margin,
+            ),
+        ))
         stave_crossnumber = (page * self.staves_per_page) + stave
-        text = dwg.text(
-            f"STAVE {stave_crossnumber} - {self.output_path.name}",
-            insert=(mm(self.margin * 2), mm(line_offset + self.stave_width - self.margin + padding_bottom)),
+        text = svg.Text(
+            text=f"STAVE {stave_crossnumber} - {self.output_path.name}",
+            x=mm(self.margin * 2),
+            y=mm(line_offset + self.stave_width - self.margin + padding_bottom),
             fill="blue",
             font_size=mm(self.font_size),
         )
-        dwg.add(text)
+        dwg.elements.append(text)
         for i, note_number in enumerate(self.music_box.note_data):
             line_x = (i * self.music_box.pitch) + line_offset
-            line = dwg.line(
-                (mm(self.margin), mm(line_x)),
-                (mm(self.stave_length + self.margin), mm(line_x)),
-                stroke=svgwrite.rgb(0, 0, 0, "%"),
-                stroke_width=".1mm",
+            line = svg.Line(
+                x1=mm(self.margin),
+                y1=mm(line_x),
+                x2=mm(self.stave_length + self.margin),
+                y2=mm(line_x),
+                stroke="black",
+                stroke_width=mm(.1),
             )
-            dwg.add(line)
-            text = dwg.text(
-                self.music_box.get_note_name(note_number),
-                insert=(mm(-2 + self.margin), mm(line_x + self.font_size / 2)),
+            dwg.elements.append(line)
+            text = svg.Text(
+                text=self.music_box.get_note_name(note_number),
+                x=mm(-2 + self.margin),
+                y=mm(line_x + self.font_size / 2),
                 fill="red",
                 font_size=mm(self.font_size),
             )
-            dwg.add(text)
+            dwg.elements.append(text)
 
         trans = self.melody.best_transpose.shift
         for sound in self.melody.sounds[offset:]:
@@ -212,14 +228,12 @@ class Staves:
 
             if sound_offset > self.stave_length:
                 break
-            circle = dwg.circle(
-                (
-                    mm(sound_offset + self.margin),
-                    mm((note_pos * self.music_box.pitch) + line_offset),
-                ),
-                "1mm",
+            circle = svg.Circle(
+                cx=mm(sound_offset + self.margin),
+                cy=mm((note_pos * self.music_box.pitch) + line_offset),
+                r=mm(1),
                 fill=fill,
             )
-            dwg.add(circle)
+            dwg.elements.append(circle)
             offset += 1
         return offset
