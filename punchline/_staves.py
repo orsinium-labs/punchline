@@ -80,29 +80,46 @@ class Staves:
 
     @cached_property
     def stave_width(self) -> float:
+        """How wide each stave (stripe) is.
+        """
         return (len(self.music_box.note_data) - 1) * self.music_box.pitch + self.margin
 
     @cached_property
     def staves_per_page(self) -> int:
-        return int(math.floor((self.page_height - self.margin) / self.stave_width))
+        """How many staves (stripes) can fit on a single page.
+        """
+        return math.floor((self.page_height - self.margin) / self.stave_width)
 
     @cached_property
-    def max_stave_length(self) -> float:
+    def stave_length(self) -> float:
+        """How long is each stave (stripe).
+        """
         return self.page_width - (self.margin * 2)
 
     @cached_property
-    def no_staves_required(self) -> int:
-        max_length = self.melody.max_time / self.divisor
-        return int(math.ceil(max_length / self.max_stave_length))
+    def total_length(self) -> float:
+        """The summary length of all stripes to be generated.
+        """
+        return self.melody.max_time / self.divisor
 
     @cached_property
-    def pages(self) -> int:
-        return int(math.ceil(float(self.no_staves_required) / self.staves_per_page))
+    def staves_count(self) -> int:
+        """How many staves (stripes) the are to generate.
+        """
+        return math.ceil(self.total_length / self.stave_length)
+
+    @cached_property
+    def pages_count(self) -> int:
+        """How many pages the are to generate.
+        """
+        return math.ceil(self.staves_count / self.staves_per_page)
 
     def write(self) -> None:
+        """Generate SVG pages and save them into output_path directory.
+        """
         self.output_path.mkdir(exist_ok=True, parents=True)
         offset = 0
-        for page in range(self.pages):
+        for page in range(self.pages_count):
             offset = self._write_page(page=page, offset=offset)
 
     def write_stats(self, stream: TextIO) -> None:
@@ -110,18 +127,18 @@ class Staves:
         print(f"notes: {len(self.melody.notes_use)}", file=stream)
         min_dist = self.melody.min_distance / self.divisor
         print(f"minimum note distance: {round(min_dist, 2)}", file=stream)
-        print(f"transpose: {self.melody.best_transpose[0]}", file=stream)
-        print(f"percentage hit: {round(self.melody.best_transpose[1] * 100)}%", file=stream)
-        if self.melody.best_transpose[1] == 1:
+        print(f"transpose: {self.melody.best_transpose.shift}", file=stream)
+        print(f"percentage hit: {round(self.melody.best_transpose.ratio * 100)}%", file=stream)
+        if self.melody.best_transpose.ratio == 1:
             print("^ PERFECT!")
         zero_sounds = sum(sound.time == 0 for sound in self.melody.sounds)
         if zero_sounds > 2:
             percent = round(zero_sounds / self.melody.sounds_count * 100)
             print(f"sounds without time: {zero_sounds} ({percent}%)", file=stream)
-        print(f"max length: {self.melody.max_time / self.divisor}", file=stream)
-        print(f"max stave length: {self.max_stave_length}", file=stream)
-        print(f"no staves: {self.no_staves_required}", file=stream)
-        print(f"pages: {self.pages}", file=stream)
+        print(f"total length: {round(self.total_length)} mm", file=stream)
+        print(f"max stave length: {self.stave_length} mm", file=stream)
+        print(f"staves: {self.staves_count}", file=stream)
+        print(f"pages: {self.pages_count}", file=stream)
 
     def _write_page(self, page: int, offset: int) -> int:
         file_path = self.output_path / f"{page}.svg"
@@ -135,18 +152,18 @@ class Staves:
     def _write_stave(self, dwg: svgwrite.Drawing, page: int, stave: int, offset: int) -> int:
         mark_top = self.marker_offset_top or self.marker_offset
         mark_btm = self.marker_offset_bottom or self.marker_offset
-        offset_time = ((page * self.staves_per_page) + stave) * self.max_stave_length
+        offset_time = ((page * self.staves_per_page) + stave) * self.stave_length
 
         line_offset = (stave * (self.stave_width)) + self.margin
         cross(
             dwg,
             line_offset - mark_top,
-            self.margin + self.max_stave_length,
+            self.margin + self.stave_length,
         )
         cross(
             dwg,
             line_offset + self.stave_width - self.margin + mark_btm,
-            self.margin + self.max_stave_length,
+            self.margin + self.stave_length,
         )
         cross(dwg, line_offset - mark_top, self.margin)
         cross(dwg, line_offset + self.stave_width - self.margin + mark_btm, self.margin)
@@ -161,7 +178,7 @@ class Staves:
             line_x = (i * self.music_box.pitch) + line_offset
             line = dwg.line(
                 (mm(self.margin), mm(line_x)),
-                (mm(self.max_stave_length + self.margin), mm(line_x)),
+                (mm(self.stave_length + self.margin), mm(line_x)),
                 stroke=svgwrite.rgb(0, 0, 0, "%"),
                 stroke_width=".1mm",
             )
@@ -174,7 +191,7 @@ class Staves:
             )
             dwg.add(text)
 
-        trans = self.melody.best_transpose[0]
+        trans = self.melody.best_transpose.shift
         for sound in self.melody.sounds[offset:]:
             fill = "black"
             try:
@@ -185,7 +202,7 @@ class Staves:
                 fill = "red"
             sound_offset = (sound.time / self.divisor) - offset_time
 
-            if sound_offset > self.max_stave_length:
+            if sound_offset > self.stave_length:
                 break
             circle = dwg.circle(
                 (

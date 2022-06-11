@@ -5,7 +5,7 @@ from functools import cached_property
 from pathlib import Path
 from collections import Counter
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from mido import MidiFile, Message
 
@@ -17,6 +17,19 @@ if TYPE_CHECKING:
 class Sound:
     note: int
     time: int
+    track: int
+
+
+@dataclass(frozen=True)
+class Transposition:
+    shift: int
+    ratio: float
+
+
+@dataclass
+class Distance:
+    time: int
+    diff: float = math.inf
 
 
 @dataclass
@@ -62,7 +75,7 @@ class Melody:
                         continue
                     if message.velocity == 0:
                         continue
-                    sound = Sound(note=message.note, time=time)
+                    sound = Sound(note=message.note, time=time, track=i)
                     sounds.append(sound)
 
         # skip silence at the beginning
@@ -101,19 +114,32 @@ class Melody:
         return max(sounds.time for sounds in self.sounds)
 
     @cached_property
-    def best_transpose(self) -> tuple[int, float]:
+    def best_transpose(self) -> Transposition:
         """Transposition that fits most of the notes.
         """
-        transpose = range(self.transpose_lower, self.transpose_upper)
-        best_transpose: tuple[int, float]
-        best_transpose = (0, 0)
-        for trans in transpose:
-            avail = self.count_available_sounds(trans)
-            percen = avail / float(self.sounds_count)
-            if percen == 1:
-                return (trans, 1)
-            if percen > best_transpose[1]:
-                best_transpose = (trans, percen)
+        lower_octave = int(self.transpose_lower / 12) * 12
+        best_transpose = self._get_best_transpose(
+            range(lower_octave, self.transpose_upper, 12),
+        )
+        # Better to transpose with preserving most of the notes.
+        # If full octave transposition doesn't fit just a bit, roll with it.
+        if best_transpose.ratio >= .90:
+            return best_transpose
+        return self._get_best_transpose(
+            range(self.transpose_lower, self.transpose_upper),
+        )
+
+    def _get_best_transpose(self, seq: Iterable[int]) -> Transposition:
+        """Try all transpositions from the sequence and pick the best one.
+        """
+        best_transpose: Transposition = Transposition(0, 0)
+        for shift in seq:
+            avail = self.count_available_sounds(shift)
+            ratio = avail / float(self.sounds_count)
+            if ratio == 1:
+                return Transposition(shift, 1)
+            if ratio > best_transpose.ratio:
+                best_transpose = Transposition(shift, ratio)
         return best_transpose
 
     @cached_property
@@ -131,9 +157,3 @@ class Melody:
         if not min_distances:
             return math.inf
         return min(d.diff for d in min_distances.values())
-
-
-@dataclass
-class Distance:
-    time: int
-    diff: float = math.inf
