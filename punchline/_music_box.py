@@ -11,11 +11,13 @@ NAMES = ('A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#')
 class MusicBox:
     note_data: tuple[int, ...]
     pitch: float = 2.0
-    reverse: bool = False
 
     @classmethod
     def init_parser(cls, parser: ArgumentParser) -> None:
-        parser.add_argument('--pitch', type=int, default=cls.pitch)
+        parser.add_argument(
+            '--pitch', type=int, default=cls.pitch,
+            help='distance (in mm) between 2 notes on the music box',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace) -> MusicBox:

@@ -42,10 +42,22 @@ class Melody:
 
     @classmethod
     def init_parser(cls, parser: ArgumentParser) -> None:
-        parser.add_argument('--input', type=Path, required=True)
-        parser.add_argument('--transpose-lower', type=int, default=cls.transpose_lower)
-        parser.add_argument('--transpose-upper', type=int, default=cls.transpose_upper)
-        parser.add_argument('--tracks', nargs='*', type=int, default=[])
+        parser.add_argument(
+            '--input', type=Path, required=True,
+            help='path to the input MIDI (*mid) file',
+        )
+        parser.add_argument(
+            '--transpose-lower', type=int, default=cls.transpose_lower,
+            help='the lowest transposition to try',
+        )
+        parser.add_argument(
+            '--transpose-upper', type=int, default=cls.transpose_upper,
+            help='the highest transposition to try',
+        )
+        parser.add_argument(
+            '--tracks', nargs='*', type=int, default=[],
+            help='numbers of sound tracks to include',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace, *, music_box: MusicBox) -> Melody:

@@ -8,7 +8,9 @@ from ._staves import Staves
 
 
 def main(argv: list[str], stream: TextIO) -> int:
-    parser = ArgumentParser()
+    parser = ArgumentParser(
+        description='Generate SVG staves for music box from a MIDI file.',
+    )
     Melody.init_parser(parser)
     Staves.init_parser(parser)
     MusicBox.init_parser(parser)

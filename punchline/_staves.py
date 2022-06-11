@@ -41,9 +41,8 @@ class Staves:
     melody: Melody
 
     output_path: Path = Path('output')
-    marker_offset: float = 6.
-    marker_offset_top: float = 0.
-    marker_offset_bottom: float = 0.
+    padding_top: float = 6.
+    padding_bottom: float = 6.
     margin: float = 20.
     font_size: float = 1.
     divisor: float = 67.
@@ -52,15 +51,35 @@ class Staves:
 
     @classmethod
     def init_parser(cls, parser: ArgumentParser) -> None:
-        parser.add_argument('--output', type=Path, default=cls.output_path)
-        parser.add_argument('--marker-offset', type=float, default=cls.marker_offset)
-        parser.add_argument('--marker-offset-top', type=float, default=cls.marker_offset_top)
-        parser.add_argument('--marker-offset-bottom', type=float, default=cls.marker_offset_bottom)
-        parser.add_argument('--margin', type=float, default=cls.margin)
+        parser.add_argument(
+            '--output', type=Path, default=cls.output_path,
+            help='the directory to save generated SVG pages',
+        )
+        parser.add_argument(
+            '--padding-top', type=float, default=cls.padding_top,
+            help='the padding from the stripe top to the first line (in mm).',
+        )
+        parser.add_argument(
+            '--padding-bottom', type=float, default=cls.padding_bottom,
+            help='the padding from the stripe top to the first line (in mm).',
+        )
+        parser.add_argument(
+            '--margin', type=float, default=cls.margin,
+            help='distance (in mm) to keep between stripes and page borders',
+        )
         parser.add_argument('--divisor', type=float, default=cls.divisor)
-        parser.add_argument('--font-size', type=float, default=cls.font_size)
-        parser.add_argument('--page-width', type=float, default=cls.page_width)
-        parser.add_argument('--page-height', type=float, default=cls.page_height)
+        parser.add_argument(
+            '--font-size', type=float, default=cls.font_size,
+            help='size of all text on the page (in mm)',
+        )
+        parser.add_argument(
+            '--page-width', type=float, default=cls.page_width,
+            help='horizontal (longer) page size (in mm). A4 by default.',
+        )
+        parser.add_argument(
+            '--page-height', type=float, default=cls.page_height,
+            help='vertical (shorter) page size (in mm). A4 by default.',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace, *, melody: Melody) -> Staves:
@@ -68,9 +87,8 @@ class Staves:
             music_box=melody.music_box,
             melody=melody,
             output_path=args.output,
-            marker_offset=args.marker_offset,
-            marker_offset_top=args.marker_offset_top,
-            marker_offset_bottom=args.marker_offset_bottom,
+            padding_top=args.padding_top,
+            padding_bottom=args.padding_bottom,
             margin=args.margin,
             divisor=args.divisor,
             font_size=args.font_size,
@@ -150,26 +168,24 @@ class Staves:
         return offset
 
     def _write_stave(self, dwg: svgwrite.Drawing, page: int, stave: int, offset: int) -> int:
-        mark_top = self.marker_offset_top or self.marker_offset
-        mark_btm = self.marker_offset_bottom or self.marker_offset
         offset_time = ((page * self.staves_per_page) + stave) * self.stave_length
-
         line_offset = (stave * (self.stave_width)) + self.margin
         cross(
             dwg,
-            line_offset - mark_top,
+            line_offset - self.padding_top,
             self.margin + self.stave_length,
         )
         cross(
             dwg,
-            line_offset + self.stave_width - self.margin + mark_btm,
+            line_offset + self.stave_width - self.margin + self.padding_bottom,
             self.margin + self.stave_length,
         )
-        cross(dwg, line_offset - mark_top, self.margin)
-        cross(dwg, line_offset + self.stave_width - self.margin + mark_btm, self.margin)
+        cross(dwg, line_offset - self.padding_top, self.margin)
+        cross(dwg, line_offset + self.stave_width - self.margin + self.padding_bottom, self.margin)
+        stave_crossnumber = (page * self.staves_per_page) + stave
         text = dwg.text(
-            "STAVE {} - {}".format((page * self.staves_per_page) + stave, self.output_path.name),
-            insert=(mm(self.margin * 2), mm(line_offset + self.stave_width - self.margin + self.marker_offset)),
+            f"STAVE {stave_crossnumber} - {self.output_path.name}",
+            insert=(mm(self.margin * 2), mm(line_offset + self.stave_width - self.margin + self.padding_bottom)),
             fill="blue",
             font_size=mm(self.font_size),
         )
