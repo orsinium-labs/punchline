@@ -52,7 +52,8 @@ class Note:
 class MusicBox:
     sharps: bool = False
     first_note: str = 'C4'
-    notes_count: int = 35
+    notes_count: int = 15
+    reverse: bool = False
     pitch: float = 2.0
     padding_top: float = 6.
     padding_bottom: float = 6.
@@ -70,6 +71,10 @@ class MusicBox:
         parser.add_argument(
             '--notes-count', type=int, default=cls.notes_count,
             help='how many notes in total there are on the music box',
+        )
+        parser.add_argument(
+            '--reverse', action='store_true', default=False,
+            help='set this flag if the first note should be at the top',
         )
         parser.add_argument(
             '--pitch', type=float, default=cls.pitch,
@@ -90,6 +95,7 @@ class MusicBox:
             sharps=args.sharps,
             first_note=args.first_note,
             notes_count=args.notes_count,
+            reverse=args.reverse,
             pitch=args.pitch,
             padding_top=args.padding_top,
             padding_bottom=args.padding_bottom,
@@ -127,4 +133,6 @@ class MusicBox:
             if not self.sharps and note.is_sharp:
                 continue
             notes.append(note)
+        if not self.reverse:  # sic! we reverse is reverse is False.
+            notes.reverse()
         return tuple(notes)
