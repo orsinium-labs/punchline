@@ -107,7 +107,7 @@ class Staves:
     def stave_length(self) -> float:
         """How long each stave (stripe) is (in mm).
         """
-        return self.page_width - (self.margin * 2)
+        return self.page_width - self.margin * 2
 
     @cached_property
     def total_length(self) -> float:
@@ -164,7 +164,7 @@ class Staves:
         return offset
 
     def _write_stave(self, dwg: svg.SVG, page: int, stave: int, offset: int) -> int:
-        line_offset = (stave * self.stave_width) + self.margin * 2
+        line_offset = stave * self.stave_width + self.margin * 2
         if dwg.elements is None:
             dwg.elements = []
 
@@ -185,7 +185,7 @@ class Staves:
         ))
 
         # draw caption (melody name and stave number)
-        stave_crossnumber = (page * self.staves_per_page) + stave + 1
+        stave_crossnumber = page * self.staves_per_page + stave + 1
         text = svg.Text(
             text=f"{self.name} #{stave_crossnumber}",
             x=mm(self.margin * 2),
@@ -197,7 +197,7 @@ class Staves:
 
         # draw lines
         for i, note in enumerate(self.music_box.notes):
-            line_x = (i * self.music_box.pitch) + line_offset
+            line_x = i * self.music_box.pitch + line_offset
             line = svg.Line(
                 x1=mm(self.margin),
                 y1=mm(line_x),
@@ -217,7 +217,7 @@ class Staves:
             dwg.elements.append(text)
 
         # draw cut circles
-        offset_time = ((page * self.staves_per_page) + stave) * self.stave_length
+        offset_time = (page * self.staves_per_page + stave) * self.stave_length
         trans = self.melody.best_transpose.shift
         for sound in self.melody.sounds[offset:]:
             fill = "black"
@@ -227,13 +227,13 @@ class Staves:
             else:
                 note_pos = self.music_box.guess_note_pos(note_number)
                 fill = "red"
-            sound_offset = (sound.time / self.speed) - offset_time
+            sound_offset = sound.time / self.speed - offset_time
 
             if sound_offset > self.stave_length:
                 break
             circle = svg.Circle(
                 cx=mm(sound_offset + self.margin),
-                cy=mm((note_pos * self.music_box.pitch) + line_offset),
+                cy=mm(note_pos * self.music_box.pitch + line_offset),
                 r=mm(1),
                 fill=fill,
             )
