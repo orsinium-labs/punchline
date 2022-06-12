@@ -232,7 +232,7 @@ class Staves:
             if self.music_box.contains_note(note_number):
                 note_pos = self.music_box.get_note_pos(note_number)
             else:
-                note_pos = 0
+                note_pos = self.music_box.guess_note_pos(note_number)
                 fill = "red"
             sound_offset = (sound.time / self.divisor) - offset_time
 

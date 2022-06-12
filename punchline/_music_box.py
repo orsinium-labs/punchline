@@ -113,7 +113,32 @@ class MusicBox:
         return note in self._note_data
 
     def get_note_pos(self, note: int) -> int:
+        """Get the line number on which the note should be put.
+        """
         return self._note_data.index(note)
+
+    def guess_note_pos(self, note: int) -> int:
+        """For the note that isn't on the music box, try to put it on a good enough place.
+        """
+        # try to transposition note with changing octave but preserving the letter.
+        is_sharp = Note(note).is_sharp
+        transpositions = (0, -12, 12, -24, 24, -36, 35)
+        for trans in transpositions:
+            guesses = [note + trans]
+            # if the note is sharp but the music box doesn't support sharps,
+            # try to shift it on semitone below or above.
+            if is_sharp and not self.sharps:
+                guesses.extend([note + trans - 1, note + trans + 1])
+            for guess in guesses:
+                if self.contains_note(guess):
+                    return self.get_note_pos(guess)
+
+        above = note < min(self._note_data)
+        if self.reverse:
+            above = not above
+        if above:
+            return self.notes_count - 1
+        return 0
 
     @cached_property
     def _note_data(self) -> tuple[int, ...]:
