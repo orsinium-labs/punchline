@@ -115,7 +115,7 @@ class Melody:
         """
         count = 0
         for note, freq in self.notes_use.items():
-            if note + trans in self.music_box.note_data:
+            if self.music_box.contains_note(note + trans):
                 count += freq
         return count
 

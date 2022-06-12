@@ -12,7 +12,7 @@ NAMES = ('A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#')
 
 @dataclass
 class MusicBox:
-    note_data: tuple[int, ...]
+    _note_data: tuple[int, ...]
     pitch: float = 2.0
     padding_top: float = 6.
     padding_bottom: float = 6.
@@ -35,17 +35,31 @@ class MusicBox:
     @classmethod
     def from_args(cls, args: Namespace) -> MusicBox:
         return cls(
-            note_data=BOX_35,
+            _note_data=BOX_35,
             pitch=args.pitch,
             padding_top=args.padding_top,
             padding_bottom=args.padding_bottom,
         )
 
     @property
+    def width(self) -> float:
+        """The distance between edge notes of the music box.
+        """
+        return (len(self._note_data) - 1) * self.pitch
+
+    def contains_note(self, note: int) -> bool:
+        """Check if the note is present on the music box.
+        """
+        return note in self._note_data
+
+    def get_note_pos(self, note: int) -> int:
+        return self._note_data.index(note)
+
+    @property
     def note_names(self) -> Iterator[str]:
         """Sequence of all notes names that are presented on the music box.
         """
-        for note_number in self.note_data:
+        for note_number in self._note_data:
             yield self._get_note_name(note_number)
 
     def _get_note_name(self, val: int) -> str:
@@ -56,8 +70,7 @@ class MusicBox:
 
 
 BOX_35 = (
-    60, 62, 67, 69,
-    71, 72, 74, 76, 77, 78, 79,
-    80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-    90, 91, 92, 93, 94, 95, 96, 98, 100,
+    60, 62, 67, 69, 71, 72, 74, 76, 77, 78, 79, 80,
+    81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92,
+    93, 94, 95, 96, 98, 100,
 )

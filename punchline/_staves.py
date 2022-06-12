@@ -94,9 +94,9 @@ class Staves:
 
     @cached_property
     def stave_width(self) -> float:
-        """How wide each stave (stripe) is in mm.
+        """How wide each stave (stripe) is (in mm) including bottom margin.
         """
-        return (len(self.music_box.note_data) - 1) * self.music_box.pitch + self.margin
+        return self.music_box.width + self.margin
 
     @cached_property
     def staves_per_page(self) -> int:
@@ -106,7 +106,7 @@ class Staves:
 
     @cached_property
     def stave_length(self) -> float:
-        """How long is each stave (stripe) in mm.
+        """How long each stave (stripe) is (in mm).
         """
         return self.page_width - (self.margin * 2)
 
@@ -137,20 +137,18 @@ class Staves:
             offset = self._write_page(page=page, offset=offset)
 
     def write_stats(self, stream: TextIO) -> None:
+        """Write human-readable stats into the stream.
+        """
         print(f"sounds: {len(self.melody.sounds)}", file=stream)
         print(f"notes: {len(self.melody.notes_use)}", file=stream)
         min_dist = self.melody.min_distance / self.divisor
-        print(f"minimum note distance: {round(min_dist, 2)}", file=stream)
+        print(f"minimum note distance: {round(min_dist, 2)} mm", file=stream)
         print(f"transpose: {self.melody.best_transpose.shift}", file=stream)
-        print(f"percentage hit: {round(self.melody.best_transpose.ratio * 100)}%", file=stream)
+        print(f"sounds fit: {round(self.melody.best_transpose.ratio * 100)}%", file=stream)
         if self.melody.best_transpose.ratio == 1:
             print("^ PERFECT!")
-        zero_sounds = sum(sound.time == 0 for sound in self.melody.sounds)
-        if zero_sounds > 2:
-            percent = round(zero_sounds / self.melody.sounds_count * 100)
-            print(f"sounds without time: {zero_sounds} ({percent}%)", file=stream)
         print(f"total length: {round(self.total_length)} mm", file=stream)
-        print(f"max stave length: {self.stave_length} mm", file=stream)
+        print(f"stave length: {self.stave_length} mm", file=stream)
         print(f"staves: {self.staves_count}", file=stream)
         print(f"pages: {self.pages_count}", file=stream)
 
@@ -230,10 +228,10 @@ class Staves:
         trans = self.melody.best_transpose.shift
         for sound in self.melody.sounds[offset:]:
             fill = "black"
-            try:
-                note_pos = self.music_box.note_data.index(sound.note + trans)
-            except ValueError:
-                # TODO: handle missed notes
+            note = sound.note + trans
+            if self.music_box.contains_note(note):
+                note_pos = self.music_box.get_note_pos(note)
+            else:
                 note_pos = 0
                 fill = "red"
             sound_offset = (sound.time / self.divisor) - offset_time
