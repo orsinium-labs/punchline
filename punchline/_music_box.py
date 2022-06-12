@@ -122,7 +122,7 @@ class MusicBox:
         """
         # try to transposition note with changing octave but preserving the letter.
         is_sharp = Note(note).is_sharp
-        transpositions = (0, -12, 12, -24, 24, -36, 35)
+        transpositions = (0, -12, 12, -24, 24, -36, 36)
         for trans in transpositions:
             guesses = [note + trans]
             # if the note is sharp but the music box doesn't support sharps,

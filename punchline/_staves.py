@@ -14,8 +14,7 @@ if TYPE_CHECKING:
     from argparse import _ArgumentGroup, Namespace
 
 
-def mm(val: float) -> svg.Length:
-    return svg.Length(value=val, unit='mm')
+mm = svg.mm
 
 
 def cross(x: float, y: float) -> Iterator[svg.Element]:
@@ -25,7 +24,7 @@ def cross(x: float, y: float) -> Iterator[svg.Element]:
         y1=mm(x),
         x2=mm(y + hs),
         y2=mm(x),
-        stroke="black",
+        stroke="green",
         stroke_width=mm(.1),
     )
     yield svg.Line(
@@ -33,7 +32,7 @@ def cross(x: float, y: float) -> Iterator[svg.Element]:
         y1=mm(x - hs),
         x2=mm(y),
         y2=mm(x + hs),
-        stroke="black",
+        stroke="green",
         stroke_width=mm(.1),
     )
 
@@ -210,7 +209,7 @@ class Staves:
                 y1=mm(line_x),
                 x2=mm(self.stave_length + self.margin),
                 y2=mm(line_x),
-                stroke="black",
+                stroke="grey",
                 stroke_width=mm(.1),
             )
             dwg.elements.append(line)
@@ -218,7 +217,7 @@ class Staves:
                 text=note.name,
                 x=mm(-2 + self.margin),
                 y=mm(line_x + self.font_size / 2),
-                fill="red",
+                fill="orange",
                 font_size=mm(self.font_size),
             )
             dwg.elements.append(text)
