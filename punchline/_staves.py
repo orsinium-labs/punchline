@@ -43,7 +43,7 @@ class Staves:
     melody: Melody
 
     output_path: Path = Path('output')
-    margin: float = 12.
+    margin: float = 5.
     font_size: float = 1.
     speed: float = 67.
     page_width: float = 297.
@@ -93,15 +93,15 @@ class Staves:
 
     @cached_property
     def stave_width(self) -> float:
-        """How wide each stave (stripe) is (in mm) including bottom margin.
+        """How wide each stave (stripe) is (in mm) including paddings.
         """
-        return self.music_box.width + self.margin
+        return self.music_box.width + self.music_box.padding_bottom + self.music_box.padding_top
 
     @cached_property
     def staves_per_page(self) -> int:
         """How many staves (stripes) can fit on a single page.
         """
-        return math.floor((self.page_height - self.margin) / self.stave_width)
+        return math.floor((self.page_height - self.margin * 2) / self.stave_width)
 
     @cached_property
     def stave_length(self) -> float:
@@ -164,28 +164,24 @@ class Staves:
         return offset
 
     def _write_stave(self, dwg: svg.SVG, page: int, stave: int, offset: int) -> int:
-        line_offset = (stave * (self.stave_width)) + self.margin
+        line_offset = (stave * self.stave_width) + self.margin * 2
         if dwg.elements is None:
             dwg.elements = []
 
         # draw crosses at the coners of stave
         padding_top = self.music_box.padding_top
-        padding_bottom = self.music_box.padding_bottom
         x_left = self.margin
         x_right = self.margin + self.stave_length
         y_top = line_offset - padding_top
-        y_bottom = line_offset + self.stave_width - self.margin + padding_bottom
+        y_bottom = y_top + self.stave_width
+        if stave == 0:
+            dwg.elements.extend(itertools.chain(
+                cross(x=x_left, y=y_top),
+                cross(x=x_right, y=y_top),
+            ))
         dwg.elements.extend(itertools.chain(
-            cross(x=x_right, y=y_top),
-            cross(x=x_left, y=y_top),
-            cross(x=x_right, y=y_bottom),
             cross(x=x_left, y=y_bottom),
-        ))
-        dwg.elements.extend(itertools.chain(
-            cross(x=x_right, y=y_top),
-            cross(x=x_left, y=y_top),
             cross(x=x_right, y=y_bottom),
-            cross(x=x_left, y=y_bottom),
         ))
 
         # draw caption (melody name and stave number)
@@ -193,7 +189,7 @@ class Staves:
         text = svg.Text(
             text=f"{self.name} #{stave_crossnumber}",
             x=mm(self.margin * 2),
-            y=mm(line_offset + self.stave_width - self.margin + padding_bottom),
+            y=mm(y_bottom),
             fill="blue",
             font_size=mm(self.font_size),
         )
