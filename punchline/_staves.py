@@ -18,7 +18,7 @@ mm = svg.mm
 
 
 def cross(x: float, y: float) -> Iterator[svg.Element]:
-    hs = 2.5
+    hs = 1
     yield svg.Line(
         x1=mm(y - hs),
         y1=mm(x),
@@ -43,7 +43,7 @@ class Staves:
     melody: Melody
 
     output_path: Path = Path('output')
-    margin: float = 20.
+    margin: float = 10.
     font_size: float = 1.
     divisor: float = 67.
     page_width: float = 297.
