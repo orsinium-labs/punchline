@@ -20,18 +20,18 @@ mm = svg.mm
 def cross(x: float, y: float) -> Iterator[svg.Element]:
     hs = 1
     yield svg.Line(
-        x1=mm(y - hs),
-        y1=mm(x),
-        x2=mm(y + hs),
-        y2=mm(x),
+        x1=mm(x),
+        y1=mm(y - hs),
+        x2=mm(x),
+        y2=mm(y + hs),
         stroke="green",
         stroke_width=mm(.1),
     )
     yield svg.Line(
-        x1=mm(y),
-        y1=mm(x - hs),
-        x2=mm(y),
-        y2=mm(x + hs),
+        x1=mm(x - hs),
+        y1=mm(y),
+        x2=mm(x + hs),
+        y2=mm(y),
         stroke="green",
         stroke_width=mm(.1),
     )
@@ -43,7 +43,7 @@ class Staves:
     melody: Melody
 
     output_path: Path = Path('output')
-    margin: float = 10.
+    margin: float = 12.
     font_size: float = 1.
     speed: float = 67.
     page_width: float = 297.
@@ -171,23 +171,21 @@ class Staves:
         # draw crosses at the coners of stave
         padding_top = self.music_box.padding_top
         padding_bottom = self.music_box.padding_bottom
+        x_left = self.margin
+        x_right = self.margin + self.stave_length
+        y_top = line_offset - padding_top
+        y_bottom = line_offset + self.stave_width - self.margin + padding_bottom
         dwg.elements.extend(itertools.chain(
-            cross(
-                x=line_offset - padding_top,
-                y=self.margin + self.stave_length,
-            ),
-            cross(
-                x=line_offset + self.stave_width - self.margin + padding_bottom,
-                y=self.margin + self.stave_length,
-            ),
-            cross(
-                x=line_offset - padding_top,
-                y=self.margin,
-            ),
-            cross(
-                x=line_offset + self.stave_width - self.margin + padding_bottom,
-                y=self.margin,
-            ),
+            cross(x=x_right, y=y_top),
+            cross(x=x_left, y=y_top),
+            cross(x=x_right, y=y_bottom),
+            cross(x=x_left, y=y_bottom),
+        ))
+        dwg.elements.extend(itertools.chain(
+            cross(x=x_right, y=y_top),
+            cross(x=x_left, y=y_top),
+            cross(x=x_right, y=y_bottom),
+            cross(x=x_left, y=y_bottom),
         ))
 
         # draw caption (melody name and stave number)
