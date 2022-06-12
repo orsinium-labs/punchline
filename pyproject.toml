@@ -1,0 +1,57 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "punchline"
+authors = [
+    {name = "Gram", email = "gram@orsinium.dev"},
+]
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.9"
+dynamic = ["version", "description"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Multimedia :: Sound/Audio :: MIDI",
+    "Typing :: Typed",
+]
+keywords = [
+    "music box",
+    "music",
+    "midi",
+    "svg",
+    "punchcards",
+    "diy",
+]
+dependencies = [
+    "svg.py>=1.1.0",
+    "mido",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.urls]
+Source = "https://github.com/orsinium-labs/punchline"
+
+[tool.mypy]
+files = ["punchline"]
+python_version = 3.9
+ignore_missing_imports = true
+# follow_imports = "silent"
+show_error_codes = true
+
+# Settings making mypy checks harder.
+# If something here produces too many false-positives,
+# consider turning it off.
+check_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+warn_redundant_casts = true
+warn_unreachable = true
+# warn_unused_ignores = true
