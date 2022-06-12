@@ -45,7 +45,7 @@ class Staves:
     output_path: Path = Path('output')
     margin: float = 10.
     font_size: float = 1.
-    divisor: float = 67.
+    speed: float = 67.
     page_width: float = 297.
     page_height: float = 210.
     name: str = "melody"
@@ -61,7 +61,7 @@ class Staves:
             help='distance (in mm) to keep between stripes and page borders',
         )
         parser.add_argument(
-            '--divisor', type=float, default=cls.divisor,
+            '--speed', type=float, default=cls.speed,
             help='how densly the holes should be packed (ticks/mm)',
         )
         parser.add_argument(
@@ -84,7 +84,7 @@ class Staves:
             melody=melody,
             output_path=args.output,
             margin=args.margin,
-            divisor=args.divisor,
+            speed=args.speed,
             font_size=args.font_size,
             page_width=args.page_width,
             page_height=args.page_height,
@@ -113,7 +113,7 @@ class Staves:
     def total_length(self) -> float:
         """The summary length of all stripes to be generated in mm.
         """
-        return self.melody.max_time / self.divisor
+        return self.melody.max_time / self.speed
 
     @cached_property
     def staves_count(self) -> int:
@@ -140,7 +140,7 @@ class Staves:
         """
         print(f"sounds: {len(self.melody.sounds)}", file=stream)
         print(f"notes: {len(self.melody.notes_use)}", file=stream)
-        min_dist = self.melody.min_distance / self.divisor
+        min_dist = self.melody.min_distance / self.speed
         print(f"minimum note distance: {round(min_dist, 2)} mm", file=stream)
         print(f"transpose: {self.melody.best_transpose.shift}", file=stream)
         print(f"sounds fit: {round(self.melody.best_transpose.ratio * 100)}%", file=stream)
@@ -233,7 +233,7 @@ class Staves:
             else:
                 note_pos = self.music_box.guess_note_pos(note_number)
                 fill = "red"
-            sound_offset = (sound.time / self.divisor) - offset_time
+            sound_offset = (sound.time / self.speed) - offset_time
 
             if sound_offset > self.stave_length:
                 break
