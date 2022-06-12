@@ -203,7 +203,7 @@ class Staves:
         dwg.elements.append(text)
 
         # draw lines
-        for i, note_name in enumerate(self.music_box.note_names):
+        for i, note in enumerate(self.music_box.notes):
             line_x = (i * self.music_box.pitch) + line_offset
             line = svg.Line(
                 x1=mm(self.margin),
@@ -215,7 +215,7 @@ class Staves:
             )
             dwg.elements.append(line)
             text = svg.Text(
-                text=note_name,
+                text=note.name,
                 x=mm(-2 + self.margin),
                 y=mm(line_x + self.font_size / 2),
                 fill="red",
@@ -228,9 +228,9 @@ class Staves:
         trans = self.melody.best_transpose.shift
         for sound in self.melody.sounds[offset:]:
             fill = "black"
-            note = sound.note + trans
-            if self.music_box.contains_note(note):
-                note_pos = self.music_box.get_note_pos(note)
+            note_number = sound.note + trans
+            if self.music_box.contains_note(note_number):
+                note_pos = self.music_box.get_note_pos(note_number)
             else:
                 note_pos = 0
                 fill = "red"
