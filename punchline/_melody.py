@@ -38,6 +38,7 @@ class Melody:
     music_box: MusicBox
     transpose_lower: int = -100
     transpose_upper: int = 100
+    max_pause: int = 2000
     tracks: frozenset = frozenset(range(16))
 
     @classmethod
@@ -58,6 +59,10 @@ class Melody:
             '--tracks', nargs='*', type=int, default=[],
             help='numbers of sound tracks to include',
         )
+        parser.add_argument(
+            '--max-pause', type=int, default=cls.max_pause,
+            help='maximum pause (in ticks) between two consequentive sounds',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace, *, music_box: MusicBox) -> Melody:
@@ -65,6 +70,7 @@ class Melody:
             path=args.input,
             transpose_lower=args.transpose_lower,
             transpose_upper=args.transpose_upper,
+            max_pause=args.max_pause,
             tracks=frozenset(args.tracks) or cls.tracks,
             music_box=music_box,
         )
@@ -79,6 +85,7 @@ class Melody:
                     continue
                 print(f'reading track #{i} "{track.name}"...')
                 time = 0
+                prev_time = 0
                 for message in track:
                     time += message.time
                     if message.is_meta:
@@ -87,6 +94,9 @@ class Melody:
                         continue
                     if message.velocity == 0:
                         continue
+                    # if the pause too long, make it shorter
+                    time = prev_time + min(self.max_pause, time - prev_time)
+                    prev_time = time
                     sound = Sound(note=message.note, time=time, track=i)
                     sounds.append(sound)
 
