@@ -55,6 +55,8 @@ python3.9 -m punchline --input SevenNationArmy.mid --tracks 3 --sharps --notes-c
 
 The only required argument is `--input`. By default, it will generate stripes from all tracks for 15-notes non-sharp music box and store the result in the "output" directory.
 
+You can find a few more examples in [presets.md](./presets.md).
+
 ## Editing tips
 
 1. You can use [Inkscape](https://inkscape.org/) to edit generated SVG images. It's free and powerful.
