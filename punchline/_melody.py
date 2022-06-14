@@ -39,9 +39,9 @@ class Melody:
     transpose_lower: int = -100
     transpose_upper: int = 100
     max_pause: int = 2000
-    start_pause: int = 2000
+    start_pause: int = 100
     cut_pause: int = 50_000
-    tracks: frozenset = frozenset(range(16))
+    tracks: frozenset = frozenset(range(40))
 
     @classmethod
     def init_parser(cls, parser: _ArgumentGroup) -> None:
@@ -95,9 +95,9 @@ class Melody:
             for i, track in enumerate(midi_file.tracks):
                 if i not in self.tracks:
                     continue
-                print(f'reading track #{i} "{track.name}"...')
                 time = 0
                 prev_time = 0
+                sounds_before = len(sounds)
                 for message in track:
                     time += message.time
                     if message.is_meta:
@@ -114,6 +114,8 @@ class Melody:
                     prev_time = time
                     sound = Sound(note=message.note, time=time, track=i)
                     sounds.append(sound)
+                name = f'#{i} "{track.name.strip()}"'
+                print(f'  included {len(sounds) - sounds_before} sounds from track {name}')
 
         # set fixed silence at the beginning
         if sounds:
