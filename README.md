@@ -10,15 +10,16 @@ Some basics:
 
 Features:
 
-1. Written on modern Python.
-1. Has friendly CLI.
-1. Well documented source code (if you really want to tweak something).
-1. Highly configurable.
-1. Has only necessary dependencies.
-1. Automatically finds the best transposition.
-1. Finds the best fit for notes that aren't present on the music box.
-1. Supports all kinds of music boxes.
-1. Works offline.
++ Written on modern Python.
++ Has friendly CLI.
++ Well documented source code (if you really want to tweak something).
++ Highly configurable.
++ Has only necessary dependencies.
++ Automatically finds the best transposition.
++ Finds the best fit for notes that aren't present on the music box.
++ Supports all kinds of music boxes.
++ Works offline.
++ Detects notes that might be silent.
 
 ## Output example
 
@@ -46,10 +47,10 @@ Get help:
 python3.9 -m punchline --help
 ```
 
-Generate punch cards from 3rd track in [SevenNationArmy.mid](https://freemidi.org/download3-3953-seven-nation-army-white-stripes) for 35-notes music box that supports sharp notes and save the result into "7nation" directory:
+Generate punch cards from 3rd track in [SevenNationArmy.mid](https://freemidi.org/download3-3953-seven-nation-army-white-stripes) for 20-notes music box that supports sharp notes and save the result into "7nation" directory:
 
 ```bash
-python3.9 -m punchline --input SevenNationArmy.mid --tracks 3 --sharps --notes-count 35 --output 7nation
+python3.9 -m punchline --input SevenNationArmy.mid --tracks 3 --sharps --notes-count 20 --output 7nation
 ```
 
 The only required argument is `--input`. By default, it will generate stripes from all tracks for 15-notes non-sharp music box and store the result in the "output" directory.
@@ -63,7 +64,7 @@ The only required argument is `--input`. By default, it will generate stripes fr
     1. Open "Select same" menu.
     1. Select "Fill and stroke"
 1. Red circles indicate sounds that aren't perfectly fit on the music box. They are either in a different octave comparing to most of the other sounds or they are semitones (sharp notes) when your music box doesn't support semitones. Punchline tries its best to place them where it will sound OK but you may want to edit them or remove altogether.
-1. Pay attention to the sounds that have the same note and go close to each other. The second one might be silent because of limitations of the music box. You may want to decrease the `--speed` for the whole melody or manually move (or remove) colliding sounds.
+1. Pay attention to the outlined circles (filled with white instead of a color). They indicate sounds that are too close to the previous one on the same line. They might be silent because of limitations of the music box. You may want to decrease the `--speed` for the whole melody or manually move (or remove) colliding sounds. The minimal distance between circles (their centers) is configured by `--min-distance`.
 
 ## Acknowledgments
 

@@ -57,6 +57,7 @@ class MusicBox:
     pitch: float = 2.0
     padding_top: float = 6.
     padding_bottom: float = 6.
+    min_distance: float = 7.
 
     @classmethod
     def init_parser(cls, parser: _ArgumentGroup) -> None:
@@ -82,11 +83,15 @@ class MusicBox:
         )
         parser.add_argument(
             '--padding-top', type=float, default=cls.padding_top,
-            help='the padding from the stripe top to the first line (in mm).',
+            help='the padding from the stripe top to the first line (in mm)',
         )
         parser.add_argument(
             '--padding-bottom', type=float, default=cls.padding_bottom,
-            help='the padding from the stripe top to the first line (in mm).',
+            help='the padding from the stripe top to the first line (in mm)',
+        )
+        parser.add_argument(
+            '--min-distance', type=float, default=cls.min_distance,
+            help='if 2 notes are closer than this value (in mm), the second one is silent',
         )
 
     @classmethod
@@ -99,6 +104,7 @@ class MusicBox:
             pitch=args.pitch,
             padding_top=args.padding_top,
             padding_bottom=args.padding_bottom,
+            min_distance=args.min_distance,
         )
 
     @property
@@ -158,6 +164,6 @@ class MusicBox:
             if not self.sharps and note.is_sharp:
                 continue
             notes.append(note)
-        if not self.reverse:  # sic! we reverse is reverse is False.
+        if not self.reverse:  # sic! we reverse if reverse is False.
             notes.reverse()
         return tuple(notes)

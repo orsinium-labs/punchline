@@ -226,23 +226,41 @@ class Staves:
         # draw cut circles
         offset_time = (page * self.staves_per_page + stave) * self.stave_length
         trans = self.melody.best_transpose.shift
+        latest_notes: dict[int, float] = dict()
         for sound in self.melody.sounds[offset:]:
-            fill = "black"
+            sound_offset = sound.time / self.speed - offset_time
+            if sound_offset > self.stave_length:
+                break
+
+            # place the sound, fill black for exact placement and fill red for transposed
+            fill: str | None = "black"
             note_number = sound.note + trans
             if self.music_box.contains_note(note_number):
                 note_pos = self.music_box.get_note_pos(note_number)
             else:
                 note_pos = self.music_box.guess_note_pos(note_number)
                 fill = "red"
-            sound_offset = sound.time / self.speed - offset_time
 
-            if sound_offset > self.stave_length:
-                break
+            # outline instead of fill if note is too close to the previous one
+            stroke = None
+            stroke_width = None
+            prev_offset = latest_notes.get(note_pos)
+            if prev_offset is not None:
+                distance = sound_offset - prev_offset
+                if distance < self.music_box.min_distance:
+                    stroke = fill
+                    stroke_width = mm(.1)
+                    fill = "white"
+            if stroke is None:
+                latest_notes[note_pos] = sound_offset
+
             circle = svg.Circle(
                 cx=mm(sound_offset + self.margin),
                 cy=mm(note_pos * self.music_box.pitch + line_offset),
                 r=mm(self.diameter / 2),
                 fill=fill,
+                stroke=stroke,
+                stroke_width=stroke_width,
             )
             dwg.elements.append(circle)
             offset += 1
