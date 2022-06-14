@@ -166,6 +166,9 @@ class Staves:
         )
         for stave in range(self.staves_per_page):
             offset = self._write_stave(canvas, page=page, stave=stave, offset=offset)
+            # stop drawing staves when the last sound is written
+            if offset >= self.melody.sounds_count:
+                break
         file_path = self.output_path / f"{page}.svg"
         file_path.write_text(str(canvas))
         return offset
