@@ -39,6 +39,7 @@ class Melody:
     transpose_lower: int = -100
     transpose_upper: int = 100
     max_pause: int = 2000
+    start_pause: int = 2000
     tracks: frozenset = frozenset(range(16))
 
     @classmethod
@@ -63,6 +64,10 @@ class Melody:
             '--max-pause', type=int, default=cls.max_pause,
             help='maximum pause (in ticks) between two consequentive sounds',
         )
+        parser.add_argument(
+            '--start-pause', type=int, default=cls.start_pause,
+            help='pause (in ticks) at the beginning of the first stripe',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace, *, music_box: MusicBox) -> Melody:
@@ -71,6 +76,7 @@ class Melody:
             transpose_lower=args.transpose_lower,
             transpose_upper=args.transpose_upper,
             max_pause=args.max_pause,
+            start_pause=args.start_pause,
             tracks=frozenset(args.tracks) or cls.tracks,
             music_box=music_box,
         )
@@ -100,10 +106,10 @@ class Melody:
                     sound = Sound(note=message.note, time=time, track=i)
                     sounds.append(sound)
 
-        # skip silence at the beginning
-        min_time = min(sound.time for sound in sounds)
+        # set fixed silence at the beginning
+        shift = self.start_pause - min(sound.time for sound in sounds)
         for sound in sounds:
-            sound.time -= min_time
+            sound.time += shift
 
         sounds.sort(key=lambda sound: sound.time)
         return sounds
