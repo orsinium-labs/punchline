@@ -108,7 +108,7 @@ class Melody:
                         continue
                     # if the pause too long, make it shorter
                     diff = time - prev_time
-                    if diff > self.cut_pause:
+                    if sounds and diff > self.cut_pause:
                         break
                     time = prev_time + min(self.max_pause, diff)
                     prev_time = time

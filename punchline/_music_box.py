@@ -58,6 +58,7 @@ class MusicBox:
     padding_top: float = 6.
     padding_bottom: float = 6.
     min_distance: float = 7.
+    prefer_up: bool = False
 
     @classmethod
     def init_parser(cls, parser: _ArgumentGroup) -> None:
@@ -93,6 +94,10 @@ class MusicBox:
             '--min-distance', type=float, default=cls.min_distance,
             help='if 2 notes are closer than this value (in mm), the second one is silent',
         )
+        parser.add_argument(
+            '--prefer-up', action='store_true',
+            help='prefer shifting sharp notes half-tone up rather than down (when unsupported)',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace) -> MusicBox:
@@ -105,6 +110,7 @@ class MusicBox:
             padding_top=args.padding_top,
             padding_bottom=args.padding_bottom,
             min_distance=args.min_distance,
+            prefer_up=args.prefer_up,
         )
 
     @property
@@ -130,11 +136,15 @@ class MusicBox:
         is_sharp = Note(note).is_sharp
         transpositions = (0, -12, 12, -24, 24, -36, 36)
         for trans in transpositions:
-            guesses = [note + trans]
+            shifted = note + trans
+            guesses = [shifted]
             # if the note is sharp but the music box doesn't support sharps,
             # try to shift it on semitone below or above.
             if is_sharp and not self.sharps:
-                guesses.extend([note + trans - 1, note + trans + 1])
+                if self.prefer_up:
+                    guesses.extend([shifted + 1, shifted - 1])
+                else:
+                    guesses.extend([shifted - 1, shifted + 1])
             for guess in guesses:
                 if self.contains_note(guess):
                     return self.get_note_pos(guess)
