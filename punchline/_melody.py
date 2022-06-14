@@ -40,6 +40,7 @@ class Melody:
     transpose_upper: int = 100
     max_pause: int = 2000
     start_pause: int = 2000
+    cut_pause: int = 50_000
     tracks: frozenset = frozenset(range(16))
 
     @classmethod
@@ -68,6 +69,10 @@ class Melody:
             '--start-pause', type=int, default=cls.start_pause,
             help='pause (in ticks) at the beginning of the first stripe',
         )
+        parser.add_argument(
+            '--cut-pause', type=int, default=cls.cut_pause,
+            help='cut the song if pause is longer than this value (in ticks)',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace, *, music_box: MusicBox) -> Melody:
@@ -77,6 +82,7 @@ class Melody:
             transpose_upper=args.transpose_upper,
             max_pause=args.max_pause,
             start_pause=args.start_pause,
+            cut_pause=args.cut_pause,
             tracks=frozenset(args.tracks) or cls.tracks,
             music_box=music_box,
         )
@@ -101,15 +107,19 @@ class Melody:
                     if message.velocity == 0:
                         continue
                     # if the pause too long, make it shorter
-                    time = prev_time + min(self.max_pause, time - prev_time)
+                    diff = time - prev_time
+                    if diff > self.cut_pause:
+                        break
+                    time = prev_time + min(self.max_pause, diff)
                     prev_time = time
                     sound = Sound(note=message.note, time=time, track=i)
                     sounds.append(sound)
 
         # set fixed silence at the beginning
-        shift = self.start_pause - min(sound.time for sound in sounds)
-        for sound in sounds:
-            sound.time += shift
+        if sounds:
+            shift = self.start_pause - min(sound.time for sound in sounds)
+            for sound in sounds:
+                sound.time += shift
 
         sounds.sort(key=lambda sound: sound.time)
         return sounds
@@ -139,6 +149,8 @@ class Melody:
     def max_time(self) -> int:
         """The tick when the last note plays.
         """
+        if not self.sounds:
+            return 0
         return max(sounds.time for sounds in self.sounds)
 
     @cached_property
@@ -160,6 +172,8 @@ class Melody:
     def _get_best_transpose(self, seq: Iterable[int]) -> Transposition:
         """Try all transpositions from the sequence and pick the best one.
         """
+        if not self.sounds:
+            return Transposition(0, 1)
         best_transpose: Transposition = Transposition(0, 0)
         for shift in seq:
             avail = self.count_available_sounds(shift)

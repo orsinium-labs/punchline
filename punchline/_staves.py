@@ -146,6 +146,7 @@ class Staves:
         """
         print(f"sounds: {len(self.melody.sounds)}", file=stream)
         print(f"notes: {len(self.melody.notes_use)}", file=stream)
+        print(f"duration: {round(self.melody.max_time)} ticks", file=stream)
         min_dist = self.melody.min_distance / self.speed
         print(f"minimum note distance: {round(min_dist, 2)} mm", file=stream)
         print(f"transpose: {self.melody.best_transpose.shift}", file=stream)
