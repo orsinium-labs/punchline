@@ -48,6 +48,7 @@ class Staves:
     speed: float = 67.
     page_width: float = 297.
     page_height: float = 210.
+    diameter: float = 2.
     name: str = "melody"
 
     @classmethod
@@ -76,6 +77,10 @@ class Staves:
             '--page-height', type=float, default=cls.page_height,
             help='vertical (shorter) page size (in mm). A4 by default.',
         )
+        parser.add_argument(
+            '--diameter', type=float, default=cls.diameter,
+            help='diameter (in mm) of circles.',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace, *, melody: Melody) -> Staves:
@@ -88,6 +93,7 @@ class Staves:
             font_size=args.font_size,
             page_width=args.page_width,
             page_height=args.page_height,
+            diameter=args.diameter,
             name=args.input.stem,
         )
 
@@ -234,7 +240,7 @@ class Staves:
             circle = svg.Circle(
                 cx=mm(sound_offset + self.margin),
                 cy=mm(note_pos * self.music_box.pitch + line_offset),
-                r=mm(1),
+                r=mm(self.diameter / 2),
                 fill=fill,
             )
             dwg.elements.append(circle)
