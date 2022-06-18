@@ -51,6 +51,10 @@ class Staves:
     diameter: float = 2.
     name: str = "melody"
 
+    write_notes: bool = True
+    write_lines: bool = True
+    write_captions: bool = True
+
     @classmethod
     def init_parser(cls, parser: _ArgumentGroup) -> None:
         parser.add_argument(
@@ -81,6 +85,18 @@ class Staves:
             '--diameter', type=float, default=cls.diameter,
             help='diameter (in mm) of circles.',
         )
+        parser.add_argument(
+            '--no-notes', action='store_true',
+            help='do not write note names.',
+        )
+        parser.add_argument(
+            '--no-lines', action='store_true',
+            help='do not draw horizontal lines.',
+        )
+        parser.add_argument(
+            '--no-captions', action='store_true',
+            help='do not write caption with song name and stave number.',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace, *, melody: Melody) -> Staves:
@@ -95,6 +111,9 @@ class Staves:
             page_height=args.page_height,
             diameter=args.diameter,
             name=args.input.stem,
+            write_notes=not args.no_notes,
+            write_lines=not args.no_lines,
+            write_captions=not args.no_captions,
         )
 
     @cached_property
@@ -195,36 +214,39 @@ class Staves:
         ))
 
         # draw caption (melody name and stave number)
-        stave_crossnumber = page * self.staves_per_page + stave + 1
-        text = svg.Text(
-            text=f"{self.name} #{stave_crossnumber}",
-            x=mm(self.margin * 2),
-            y=mm(y_bottom),
-            fill="blue",
-            font_size=mm(self.font_size),
-        )
-        dwg.elements.append(text)
+        if self.write_captions:
+            stave_crossnumber = page * self.staves_per_page + stave + 1
+            text = svg.Text(
+                text=f"{self.name} #{stave_crossnumber}",
+                x=mm(self.margin * 2),
+                y=mm(y_bottom),
+                fill="blue",
+                font_size=mm(self.font_size),
+            )
+            dwg.elements.append(text)
 
         # draw lines
         for i, note in enumerate(self.music_box.notes):
             line_x = i * self.music_box.pitch + line_offset
-            line = svg.Line(
-                x1=mm(self.margin),
-                y1=mm(line_x),
-                x2=mm(self.stave_length + self.margin),
-                y2=mm(line_x),
-                stroke="grey",
-                stroke_width=mm(.1),
-            )
-            dwg.elements.append(line)
-            text = svg.Text(
-                text=note.name,
-                x=mm(-2 + self.margin),
-                y=mm(line_x + self.font_size / 2),
-                fill="orange",
-                font_size=mm(self.font_size),
-            )
-            dwg.elements.append(text)
+            if self.write_lines:
+                line = svg.Line(
+                    x1=mm(self.margin),
+                    y1=mm(line_x),
+                    x2=mm(self.stave_length + self.margin),
+                    y2=mm(line_x),
+                    stroke="grey",
+                    stroke_width=mm(.1),
+                )
+                dwg.elements.append(line)
+            if self.write_captions:
+                text = svg.Text(
+                    text=note.name,
+                    x=mm(-2 + self.margin),
+                    y=mm(line_x + self.font_size / 2),
+                    fill="orange",
+                    font_size=mm(self.font_size),
+                )
+                dwg.elements.append(text)
 
         # draw cut circles
         offset_time = (page * self.staves_per_page + stave) * self.stave_length
