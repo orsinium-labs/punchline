@@ -8,3 +8,4 @@ There are links to some MIDI files, and arguments I used to get the best output 
 + [Harry Potter - Hedwigs Theme](https://freemidi.org/download3-22658-chamber-of-secrets-hedwigs-theme-harry-potter): `--tracks 19 --cut-pause 1000 --speed 35`
 + [Mission Impossible](https://freemidi.org/download3-8871-mission-impossible-movie-themes): `--tracks 8 --cut-pause 2000`
 + [Deep Purple - Smoke on the Water](https://freemidi.org/download3-2756-smoke-on-the-water-deep-purple): `--tracks 5 --speed 40 --prefer-up --cut-pause 500`
++ [Mister Sandman](https://freemidi.org/download3-14744-mister-sandman-chet-atkins): `--cut-pause 1000 --speed 100`
