@@ -44,7 +44,7 @@ class Staves:
     page_width: float = 297.
     page_height: float = 210.
     start_width: float = 3.
-    diameter: float = 2.
+    diameter: float = 2.5
     name: str = "melody"
 
     write_borders: bool = True
