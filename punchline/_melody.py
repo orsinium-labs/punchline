@@ -39,7 +39,7 @@ class Melody:
     transpose_lower: int = -100
     transpose_upper: int = 100
     max_pause: int = 2000
-    start_pause: int = 100
+    start_pause: int = 200
     cut_pause: int = 50_000
     tracks: frozenset = frozenset(range(40))
 

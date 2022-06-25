@@ -216,10 +216,12 @@ class Staves:
         if self.write_captions:
             stave_crossnumber = page * self.staves_per_page + stave + 1
             y_top = line_offset - self.music_box.padding_top
+            caption = self.name if stave_crossnumber == 1 else f"#{stave_crossnumber}"
+            caption.replace("_", " ")
             dwg.elements.extend(self._write_text(
                 x=self.margin * 2,
                 y=y_top + self.stave_width - 1,
-                text=f"{self.name} #{stave_crossnumber}",
+                text=caption,
                 color="blue",
             ))
 
