@@ -22,12 +22,6 @@ Features:
 + Detects notes that might be silent.
 + Laser cutter friendly output.
 
-## Output example
-
-Seven Nation Army for 15 notes music box:
-
-![seven nation army output example](./example.png)
-
 ## Installation
 
 You'll need:
