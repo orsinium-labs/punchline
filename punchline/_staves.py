@@ -27,7 +27,7 @@ class Staves:
     speed: float = 67.
     page_width: float = 297.
     page_height: float = 210.
-    start_width: float = 5.
+    start_width: float = 3.
     diameter: float = 2.
     name: str = "melody"
 
@@ -129,7 +129,7 @@ class Staves:
     def total_length(self) -> float:
         """The summary length of all stripes to be generated in mm.
         """
-        return self.melody.max_time / self.speed
+        return self.melody.max_time / self.speed + self.start_width
 
     @cached_property
     def staves_count(self) -> int:
@@ -224,7 +224,7 @@ class Staves:
             if self.write_notes:
                 emit(svg.Text(
                     text=note.name,
-                    x=mm(margin_left - 2),
+                    x=mm(self.margin - 2),
                     y=mm(line_y + self.font_size / 2),
                     fill="orange",
                     font_size=mm(self.font_size),
@@ -295,16 +295,28 @@ class Staves:
         # left border
         if page == 0 and stave == 0:
             x_left += self.start_width
-            y_mid_diff = (y_bottom - y_top) // 2
+            y_mid_diff = (y_bottom - y_top) / 2
             y_middle = y_top + y_mid_diff
+            quarter_diff = y_mid_diff / 2
+            x_peak = x_left - self.start_width
             yield svg.Line(
                 x1=mm(x_left), y1=mm(y_top),
-                x2=mm(x_left - self.start_width), y2=mm(y_middle),
+                x2=mm(x_peak), y2=mm(y_middle - quarter_diff),
+                stroke_width=mm(.1), stroke="green",
+            )
+            yield svg.Line(
+                x1=mm(x_left), y1=mm(y_middle),
+                x2=mm(x_peak), y2=mm(y_middle - quarter_diff),
+                stroke_width=mm(.1), stroke="green",
+            )
+            yield svg.Line(
+                x1=mm(x_left), y1=mm(y_middle),
+                x2=mm(x_peak), y2=mm(y_middle + quarter_diff),
                 stroke_width=mm(.1), stroke="green",
             )
             yield svg.Line(
                 x1=mm(x_left), y1=mm(y_bottom),
-                x2=mm(x_left - self.start_width), y2=mm(y_middle),
+                x2=mm(x_peak), y2=mm(y_middle + quarter_diff),
                 stroke_width=mm(.1), stroke="green",
             )
         else:
