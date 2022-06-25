@@ -313,30 +313,22 @@ class Staves:
         # left border
         if page == 0 and stave == 0:
             x_left += self.start_width
+            x_peak = x_left - self.start_width
             y_mid_diff = (y_bottom - y_top) / 2
             y_middle = y_top + y_mid_diff
             quarter_diff = y_mid_diff / 2
-            x_peak = x_left - self.start_width
-            yield svg.Line(
-                x1=mm(x_left), y1=mm(y_top),
-                x2=mm(x_peak), y2=mm(y_middle - quarter_diff),
-                stroke_width=mm(.1), stroke="green",
-            )
-            yield svg.Line(
-                x1=mm(x_left), y1=mm(y_middle),
-                x2=mm(x_peak), y2=mm(y_middle - quarter_diff),
-                stroke_width=mm(.1), stroke="green",
-            )
-            yield svg.Line(
-                x1=mm(x_left), y1=mm(y_middle),
-                x2=mm(x_peak), y2=mm(y_middle + quarter_diff),
-                stroke_width=mm(.1), stroke="green",
-            )
-            yield svg.Line(
-                x1=mm(x_left), y1=mm(y_bottom),
-                x2=mm(x_peak), y2=mm(y_middle + quarter_diff),
-                stroke_width=mm(.1), stroke="green",
-            )
+            pairs = [
+                (y_top, y_middle - quarter_diff),
+                (y_middle, y_middle - quarter_diff),
+                (y_middle, y_middle + quarter_diff),
+                (y_bottom, y_middle + quarter_diff),
+            ]
+            for y1, y2 in pairs:
+                yield svg.Line(
+                    x1=mm(x_left), y1=mm(y1),
+                    x2=mm(x_peak), y2=mm(y2),
+                    stroke_width=mm(.1), stroke="green",
+                )
         else:
             yield svg.Line(
                 x1=mm(x_left), y1=mm(y_top),
