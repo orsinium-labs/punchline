@@ -190,7 +190,7 @@ class Staves:
         emit = dwg.elements.append
         if self.write_borders:
             dwg.elements.extend(
-                self._write_borders(line_offset=line_offset, page=page, stave=stave)
+                self._write_borders(line_offset=line_offset, page=page, stave=stave),
             )
 
         # draw caption (melody name and stave number)
@@ -208,27 +208,32 @@ class Staves:
 
         # draw lines
         for i, note in enumerate(self.music_box.notes):
-            line_x = i * self.music_box.pitch + line_offset
+            line_y = i * self.music_box.pitch + line_offset
+            margin_left = self.margin
+            if page == 0 and stave == 0:
+                margin_left += self.start_width
             if self.write_lines:
                 emit(svg.Line(
-                    x1=mm(self.margin),
-                    y1=mm(line_x),
+                    x1=mm(margin_left),
+                    y1=mm(line_y),
                     x2=mm(self.stave_length + self.margin),
-                    y2=mm(line_x),
+                    y2=mm(line_y),
                     stroke="grey",
                     stroke_width=mm(.1),
                 ))
-            if self.write_captions:
+            if self.write_notes:
                 emit(svg.Text(
                     text=note.name,
-                    x=mm(-2 + self.margin),
-                    y=mm(line_x + self.font_size / 2),
+                    x=mm(margin_left - 2),
+                    y=mm(line_y + self.font_size / 2),
                     fill="orange",
                     font_size=mm(self.font_size),
                 ))
 
         # draw cut circles
         offset_time = (page * self.staves_per_page + stave) * self.stave_length
+        if page == 0 and stave == 0:
+            offset_time -= self.start_width
         trans = self.melody.best_transpose.shift
         latest_notes: dict[int, float] = dict()
         for sound in self.melody.sounds[offset:]:
@@ -275,21 +280,23 @@ class Staves:
         page: int,
         stave: int,
     ) -> Iterator[svg.Element]:
-        # draw crosses at the coners of stave
         x_left = self.margin
         x_right = self.margin + self.stave_length
         y_top = line_offset - self.music_box.padding_top
         y_bottom = y_top + self.stave_width
-        if stave == 0:
-            yield svg.Line(      # top border
-                x1=mm(x_left), y1=mm(y_top),
-                x2=mm(x_right), y2=mm(y_top),
-                stroke_width=mm(.1), stroke="green",
-            )
+
+        # bottom border
+        yield svg.Line(
+            x1=mm(x_left), y1=mm(y_bottom),
+            x2=mm(x_right), y2=mm(y_bottom),
+            stroke_width=mm(.1), stroke="green",
+        )
 
         # left border
         if page == 0 and stave == 0:
-            y_middle = y_top + (y_bottom - y_top) // 2
+            x_left += self.start_width
+            y_mid_diff = (y_bottom - y_top) // 2
+            y_middle = y_top + y_mid_diff
             yield svg.Line(
                 x1=mm(x_left), y1=mm(y_top),
                 x2=mm(x_left - self.start_width), y2=mm(y_middle),
@@ -307,13 +314,17 @@ class Staves:
                 stroke_width=mm(.1), stroke="green",
             )
 
-        yield svg.Line(      # right border
+        # right border
+        yield svg.Line(
             x1=mm(x_right), y1=mm(y_top),
             x2=mm(x_right), y2=mm(y_bottom),
             stroke_width=mm(.1), stroke="green",
         )
-        yield svg.Line(      # bottom border
-            x1=mm(x_left), y1=mm(y_bottom),
-            x2=mm(x_right), y2=mm(y_bottom),
-            stroke_width=mm(.1), stroke="green",
-        )
+
+        # top border
+        if stave == 0:
+            yield svg.Line(
+                x1=mm(x_left), y1=mm(y_top),
+                x2=mm(x_right), y2=mm(y_top),
+                stroke_width=mm(.1), stroke="green",
+            )
