@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from functools import cached_property
 import math
 from pathlib import Path
+import re
 from typing import TYPE_CHECKING, Iterator, TextIO
 
 import svg
@@ -15,6 +16,20 @@ if TYPE_CHECKING:
 
 
 mm = svg.mm
+
+
+def camel_to_snake(name: str) -> str:
+    """Convert CamelCase to snake_case.
+
+    We do that because the most popular midi download site uses CamelCase for file names.
+
+    Source:
+        https://stackoverflow.com/a/1176023/8704691
+    """
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', name)
+    name = name.lower().replace('_', ' ')
+    return name
 
 
 @dataclass
@@ -43,6 +58,9 @@ class Staves:
         parser.add_argument(
             '--output', type=Path, default=cls.output_path,
             help='the directory to save generated SVG pages',
+        )
+        parser.add_argument(
+            '--name', help='melody name to write on the first stave',
         )
         parser.add_argument(
             '--margin', type=float, default=cls.margin,
@@ -106,7 +124,7 @@ class Staves:
             page_height=args.page_height,
             start_width=args.start_width,
             diameter=args.diameter,
-            name=args.input.stem,
+            name=args.name or camel_to_snake(args.input.stem),
             write_notes=not args.no_notes,
             write_lines=not args.no_lines,
             write_captions=not args.no_captions,
@@ -217,7 +235,6 @@ class Staves:
             stave_crossnumber = page * self.staves_per_page + stave + 1
             y_top = line_offset - self.music_box.padding_top
             caption = self.name if stave_crossnumber == 1 else f"#{stave_crossnumber}"
-            caption.replace("_", " ")
             dwg.elements.extend(self._write_text(
                 x=self.margin * 2,
                 y=y_top + self.stave_width - 1,
