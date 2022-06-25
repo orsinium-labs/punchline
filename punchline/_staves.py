@@ -180,6 +180,10 @@ class Staves:
         font.normalize_rendering(self.font_size)
         return font
 
+    @cached_property
+    def last_stave_length(self) -> float:
+        return self.total_length % self.stave_length
+
     def write(self) -> None:
         """Generate SVG pages and save them into output_path directory.
         """
@@ -320,9 +324,19 @@ class Staves:
         y_top = line_offset - self.music_box.padding_top
         y_bottom = y_top + self.stave_width
 
+        # if this is the last stave, shorten its length to the melody length
+        stave_number = page * self.staves_per_page + stave + 1
+        if stave_number == self.staves_count:
+            x_right = min(x_right, self.margin + self.last_stave_length + 5.0)
+
         # bottom border
+        x_left_bottom = x_left
+        # if there is only one stave, the bottom line should be shifted to align
+        # with the starting triangle (usually, it is aligned with the stave below)
+        if self.staves_count == 1:
+            x_left_bottom += self.start_width
         yield svg.Line(
-            x1=mm(x_left), y1=mm(y_bottom),
+            x1=mm(x_left_bottom), y1=mm(y_bottom),
             x2=mm(x_right), y2=mm(y_bottom),
             stroke_width=mm(.1), stroke="green",
         )
