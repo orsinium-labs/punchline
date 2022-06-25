@@ -242,8 +242,8 @@ class Staves:
                 ))
             if self.write_notes:
                 dwg.elements.extend(self._write_text(
-                    text=note.name,
-                    x=self.margin - 3,
+                    text=note.letter,
+                    x=self.margin - 2,
                     y=line_y + self.font_size / 2,
                     color="orange",
                 ))

@@ -45,6 +45,8 @@ class Note:
 
     @cached_property
     def name(self) -> str:
+        """The name of the note, including letter, sharp, and octave (A#1)
+        """
         return f"{self.letter}{self.octave}"
 
 
