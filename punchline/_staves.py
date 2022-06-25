@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from functools import cached_property
 import math
 from pathlib import Path
-from typing import TYPE_CHECKING, TextIO
+from typing import TYPE_CHECKING, Iterator, TextIO
 
 import svg
 from ._music_box import MusicBox
@@ -27,9 +27,11 @@ class Staves:
     speed: float = 67.
     page_width: float = 297.
     page_height: float = 210.
+    start_width: float = 5.
     diameter: float = 2.
     name: str = "melody"
 
+    write_borders: bool = True
     write_notes: bool = True
     write_lines: bool = True
     write_captions: bool = True
@@ -61,6 +63,10 @@ class Staves:
             help='vertical (shorter) page size (in mm). A4 by default.',
         )
         parser.add_argument(
+            '--start-width', type=float, default=cls.start_width,
+            help='width of the triangle start of the first stave.',
+        )
+        parser.add_argument(
             '--diameter', type=float, default=cls.diameter,
             help='diameter (in mm) of circles.',
         )
@@ -76,6 +82,10 @@ class Staves:
             '--no-captions', action='store_true',
             help='do not write caption with song name and stave number.',
         )
+        parser.add_argument(
+            '--no-borders', action='store_true',
+            help='do not write borders of the stave.',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace, *, melody: Melody) -> Staves:
@@ -88,11 +98,13 @@ class Staves:
             font_size=args.font_size,
             page_width=args.page_width,
             page_height=args.page_height,
+            start_width=args.start_width,
             diameter=args.diameter,
             name=args.input.stem,
             write_notes=not args.no_notes,
             write_lines=not args.no_lines,
             write_captions=not args.no_captions,
+            write_borders=not args.no_borders,
         )
 
     @cached_property
@@ -176,38 +188,16 @@ class Staves:
         if dwg.elements is None:
             dwg.elements = []
         emit = dwg.elements.append
-
-        # draw crosses at the coners of stave
-        padding_top = self.music_box.padding_top
-        x_left = self.margin
-        x_right = self.margin + self.stave_length
-        y_top = line_offset - padding_top
-        y_bottom = y_top + self.stave_width
-        if stave == 0:
-            emit(svg.Line(      # top border
-                x1=mm(x_left), y1=mm(y_top),
-                x2=mm(x_right), y2=mm(y_top),
-                stroke_width=mm(.1), stroke="green",
-            ))
-        emit(svg.Line(      # bottom border
-            x1=mm(x_left), y1=mm(y_bottom),
-            x2=mm(x_right), y2=mm(y_bottom),
-            stroke_width=mm(.1), stroke="green",
-        ))
-        emit(svg.Line(      # left border
-            x1=mm(x_left), y1=mm(y_top),
-            x2=mm(x_left), y2=mm(y_bottom),
-            stroke_width=mm(.1), stroke="green",
-        ))
-        emit(svg.Line(      # right border
-            x1=mm(x_right), y1=mm(y_top),
-            x2=mm(x_right), y2=mm(y_bottom),
-            stroke_width=mm(.1), stroke="green",
-        ))
+        if self.write_borders:
+            dwg.elements.extend(
+                self._write_borders(line_offset=line_offset, page=page, stave=stave)
+            )
 
         # draw caption (melody name and stave number)
         if self.write_captions:
             stave_crossnumber = page * self.staves_per_page + stave + 1
+            y_top = line_offset - self.music_box.padding_top
+            y_bottom = y_top + self.stave_width
             emit(svg.Text(
                 text=f"{self.name} #{stave_crossnumber}",
                 x=mm(self.margin * 2),
@@ -278,3 +268,52 @@ class Staves:
             ))
             offset += 1
         return offset
+
+    def _write_borders(
+        self,
+        line_offset: float,
+        page: int,
+        stave: int,
+    ) -> Iterator[svg.Element]:
+        # draw crosses at the coners of stave
+        x_left = self.margin
+        x_right = self.margin + self.stave_length
+        y_top = line_offset - self.music_box.padding_top
+        y_bottom = y_top + self.stave_width
+        if stave == 0:
+            yield svg.Line(      # top border
+                x1=mm(x_left), y1=mm(y_top),
+                x2=mm(x_right), y2=mm(y_top),
+                stroke_width=mm(.1), stroke="green",
+            )
+
+        # left border
+        if page == 0 and stave == 0:
+            y_middle = y_top + (y_bottom - y_top) // 2
+            yield svg.Line(
+                x1=mm(x_left), y1=mm(y_top),
+                x2=mm(x_left - self.start_width), y2=mm(y_middle),
+                stroke_width=mm(.1), stroke="green",
+            )
+            yield svg.Line(
+                x1=mm(x_left), y1=mm(y_bottom),
+                x2=mm(x_left - self.start_width), y2=mm(y_middle),
+                stroke_width=mm(.1), stroke="green",
+            )
+        else:
+            yield svg.Line(
+                x1=mm(x_left), y1=mm(y_top),
+                x2=mm(x_left), y2=mm(y_bottom),
+                stroke_width=mm(.1), stroke="green",
+            )
+
+        yield svg.Line(      # right border
+            x1=mm(x_right), y1=mm(y_top),
+            x2=mm(x_right), y2=mm(y_bottom),
+            stroke_width=mm(.1), stroke="green",
+        )
+        yield svg.Line(      # bottom border
+            x1=mm(x_left), y1=mm(y_bottom),
+            x2=mm(x_right), y2=mm(y_bottom),
+            stroke_width=mm(.1), stroke="green",
+        )
