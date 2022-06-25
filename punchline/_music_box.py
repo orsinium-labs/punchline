@@ -56,8 +56,8 @@ class MusicBox:
     reverse: bool = False
     pitch: float = 2.0
     padding_top: float = 6.
-    padding_bottom: float = 6.
-    min_distance: float = 7.
+    padding_bottom: float = 7.
+    min_distance: float = 8.
     prefer_up: bool = False
 
     @classmethod

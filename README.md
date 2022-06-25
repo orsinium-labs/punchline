@@ -20,6 +20,7 @@ Features:
 + Supports all kinds of music boxes.
 + Works offline.
 + Detects notes that might be silent.
++ Laser cutter friendly output.
 
 ## Output example
 

@@ -1,10 +1,9 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from functools import cached_property
-import itertools
 import math
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, TextIO
+from typing import TYPE_CHECKING, TextIO
 
 import svg
 from ._music_box import MusicBox
@@ -15,26 +14,6 @@ if TYPE_CHECKING:
 
 
 mm = svg.mm
-
-
-def cross(x: float, y: float) -> Iterator[svg.Element]:
-    hs = 1
-    yield svg.Line(
-        x1=mm(x),
-        y1=mm(y - hs),
-        x2=mm(x),
-        y2=mm(y + hs),
-        stroke="green",
-        stroke_width=mm(.1),
-    )
-    yield svg.Line(
-        x1=mm(x - hs),
-        y1=mm(y),
-        x2=mm(x + hs),
-        y2=mm(y),
-        stroke="green",
-        stroke_width=mm(.1),
-    )
 
 
 @dataclass
@@ -196,6 +175,7 @@ class Staves:
         line_offset = stave * self.stave_width + self.margin * 2
         if dwg.elements is None:
             dwg.elements = []
+        emit = dwg.elements.append
 
         # draw crosses at the coners of stave
         padding_top = self.music_box.padding_top
@@ -204,49 +184,58 @@ class Staves:
         y_top = line_offset - padding_top
         y_bottom = y_top + self.stave_width
         if stave == 0:
-            dwg.elements.extend(itertools.chain(
-                cross(x=x_left, y=y_top),
-                cross(x=x_right, y=y_top),
+            emit(svg.Line(      # top border
+                x1=mm(x_left), y1=mm(y_top),
+                x2=mm(x_right), y2=mm(y_top),
+                stroke_width=mm(.1), stroke="green",
             ))
-        dwg.elements.extend(itertools.chain(
-            cross(x=x_left, y=y_bottom),
-            cross(x=x_right, y=y_bottom),
+        emit(svg.Line(      # bottom border
+            x1=mm(x_left), y1=mm(y_bottom),
+            x2=mm(x_right), y2=mm(y_bottom),
+            stroke_width=mm(.1), stroke="green",
+        ))
+        emit(svg.Line(      # left border
+            x1=mm(x_left), y1=mm(y_top),
+            x2=mm(x_left), y2=mm(y_bottom),
+            stroke_width=mm(.1), stroke="green",
+        ))
+        emit(svg.Line(      # right border
+            x1=mm(x_right), y1=mm(y_top),
+            x2=mm(x_right), y2=mm(y_bottom),
+            stroke_width=mm(.1), stroke="green",
         ))
 
         # draw caption (melody name and stave number)
         if self.write_captions:
             stave_crossnumber = page * self.staves_per_page + stave + 1
-            text = svg.Text(
+            emit(svg.Text(
                 text=f"{self.name} #{stave_crossnumber}",
                 x=mm(self.margin * 2),
-                y=mm(y_bottom),
+                y=mm(y_bottom - 1),
                 fill="blue",
                 font_size=mm(self.font_size),
-            )
-            dwg.elements.append(text)
+            ))
 
         # draw lines
         for i, note in enumerate(self.music_box.notes):
             line_x = i * self.music_box.pitch + line_offset
             if self.write_lines:
-                line = svg.Line(
+                emit(svg.Line(
                     x1=mm(self.margin),
                     y1=mm(line_x),
                     x2=mm(self.stave_length + self.margin),
                     y2=mm(line_x),
                     stroke="grey",
                     stroke_width=mm(.1),
-                )
-                dwg.elements.append(line)
+                ))
             if self.write_captions:
-                text = svg.Text(
+                emit(svg.Text(
                     text=note.name,
                     x=mm(-2 + self.margin),
                     y=mm(line_x + self.font_size / 2),
                     fill="orange",
                     font_size=mm(self.font_size),
-                )
-                dwg.elements.append(text)
+                ))
 
         # draw cut circles
         offset_time = (page * self.staves_per_page + stave) * self.stave_length
@@ -279,14 +268,13 @@ class Staves:
             if stroke is None:
                 latest_notes[note_pos] = sound_offset
 
-            circle = svg.Circle(
+            emit(svg.Circle(
                 cx=mm(sound_offset + self.margin),
                 cy=mm(note_pos * self.music_box.pitch + line_offset),
                 r=mm(self.diameter / 2),
                 fill=fill,
                 stroke=stroke,
                 stroke_width=stroke_width,
-            )
-            dwg.elements.append(circle)
+            ))
             offset += 1
         return offset
