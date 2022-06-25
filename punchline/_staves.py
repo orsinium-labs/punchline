@@ -11,6 +11,7 @@ from ._melody import Melody
 
 if TYPE_CHECKING:
     from argparse import _ArgumentGroup, Namespace
+    from HersheyFonts import HersheyFonts
 
 
 mm = svg.mm
@@ -23,7 +24,7 @@ class Staves:
 
     output_path: Path = Path('output')
     margin: float = 5.
-    font_size: float = 1.
+    font_size: float = 2.
     speed: float = 67.
     page_width: float = 297.
     page_height: float = 210.
@@ -35,6 +36,7 @@ class Staves:
     write_notes: bool = True
     write_lines: bool = True
     write_captions: bool = True
+    hershey: bool = False
 
     @classmethod
     def init_parser(cls, parser: _ArgumentGroup) -> None:
@@ -86,6 +88,10 @@ class Staves:
             '--no-borders', action='store_true',
             help='do not write borders of the stave.',
         )
+        parser.add_argument(
+            '--hershey', action='store_true',
+            help='use hershey font for text to make it laser-cutter friendly.',
+        )
 
     @classmethod
     def from_args(cls, args: Namespace, *, melody: Melody) -> Staves:
@@ -105,6 +111,7 @@ class Staves:
             write_lines=not args.no_lines,
             write_captions=not args.no_captions,
             write_borders=not args.no_borders,
+            hershey=args.hershey,
         )
 
     @cached_property
@@ -142,6 +149,18 @@ class Staves:
         """How many pages the are to generate.
         """
         return math.ceil(self.staves_count / self.staves_per_page)
+
+    @cached_property
+    def font(self) -> HersheyFonts:
+        """Load hershey font that can be used to render text as a set of lines.
+
+        https://github.com/apshu/HersheyFonts
+        """
+        from HersheyFonts import HersheyFonts  # pip3 install hershey-fonts
+        font = HersheyFonts()
+        font.load_default_font("rowmans")
+        font.normalize_rendering(self.font_size)
+        return font
 
     def write(self) -> None:
         """Generate SVG pages and save them into output_path directory.
@@ -197,13 +216,11 @@ class Staves:
         if self.write_captions:
             stave_crossnumber = page * self.staves_per_page + stave + 1
             y_top = line_offset - self.music_box.padding_top
-            y_bottom = y_top + self.stave_width
-            emit(svg.Text(
+            dwg.elements.extend(self._write_text(
+                x=self.margin * 2,
+                y=y_top + self.stave_width - 1,
                 text=f"{self.name} #{stave_crossnumber}",
-                x=mm(self.margin * 2),
-                y=mm(y_bottom - 1),
-                fill="blue",
-                font_size=mm(self.font_size),
+                color="blue",
             ))
 
         # draw lines
@@ -222,12 +239,11 @@ class Staves:
                     stroke_width=mm(.1),
                 ))
             if self.write_notes:
-                emit(svg.Text(
+                dwg.elements.extend(self._write_text(
                     text=note.name,
-                    x=mm(self.margin - 2),
-                    y=mm(line_y + self.font_size / 2),
-                    fill="orange",
-                    font_size=mm(self.font_size),
+                    x=self.margin - 3,
+                    y=line_y + self.font_size / 2,
+                    color="orange",
                 ))
 
         # draw cut circles
@@ -339,4 +355,27 @@ class Staves:
                 x1=mm(x_left), y1=mm(y_top),
                 x2=mm(x_right), y2=mm(y_top),
                 stroke_width=mm(.1), stroke="green",
+            )
+
+    def _write_text(
+        self,
+        x: float,
+        y: float,
+        text: str,
+        color: str,
+    ) -> Iterator[svg.Element]:
+        if not self.hershey:
+            yield svg.Text(
+                text=text, x=mm(x), y=mm(y),
+                fill=color, font_size=mm(self.font_size),
+            )
+            return
+        for (dx1, dy1), (dx2, dy2) in self.font.lines_for_text(text):
+            yield svg.Line(
+                x1=mm(x + dx1),
+                y1=mm(y - dy1),
+                x2=mm(x + dx2),
+                y2=mm(y - dy2),
+                stroke=color,
+                stroke_width=mm(.1),
             )
