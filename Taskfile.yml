@@ -6,3 +6,22 @@ tasks:
   default:
     cmds:
       - python3.9 -m punchline --no-notes --no-lines --hershey --input ./midi/{{.CLI_ARGS}}
+
+  all:
+    cmds:
+      - task -- BardsSong.mid --tracks 1 --cut-pause 1000 --speed 74
+      - task -- Believer.mid --tracks 6 --speed 50 --cut-pause 1000
+      - task -- BittersweetSymphony.mid --tracks 6 --cut-pause 5000 --speed 53
+      # - task -- BoulevardOfBrokenDreams.mid --tracks 1 --speed 50
+      - task -- Breathing.mid --tracks 3 --cut-pause 300 --speed 20
+      - task -- experience.mid --tracks 1 --cut-pause 1000 --speed 55
+      # - task -- FeelGoodInc.mid --tracks 3
+      - task -- HedwigsTheme.mid --tracks 19 --cut-pause 1000 --speed 33
+      - task -- MistyMountainCold.mid --tracks 1 --max-pause 1200 --speed 60
+      - task -- MisterSandman.mid --cut-pause 1000 --speed 100
+      - task -- morrowind.mid --max-pause 1000 --cut-pause 4000
+      # - task -- PullMeUnder.mid --tracks 4
+      # - task -- SevenNationArmy.mid --tracks 3
+      - task -- SmokeOnTheWater.mid --tracks 5 --speed 35 --prefer-up --cut-pause 500
+      - task -- SuperMarioBrothers.mid --tracks 2 --speed 30
+      # - task -- SweetDreams.mid --tracks 1 --cut-pause 1000 --speed 23

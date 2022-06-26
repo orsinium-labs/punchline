@@ -238,7 +238,11 @@ class Staves:
             # stop drawing staves when the last sound is written
             if offset >= self.melody.sounds_count:
                 break
-        file_path = self.output_path / f"{page}.svg"
+        file_name = f"{page}.svg"
+        if self.pages_count == 1:
+            name = self.name.replace(' ', '-')
+            file_name = f"{name}.svg"
+        file_path = self.output_path / file_name
         file_path.write_text(str(canvas))
         return offset
 
