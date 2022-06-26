@@ -153,7 +153,7 @@ class Staves:
 
     @cached_property
     def stave_width(self) -> float:
-        """How wide each stave (stripe) is (in mm) including paddings.
+        """How wide (vertically) each stave (stripe) is (in mm) including paddings.
         """
         return self.music_box.width + self.music_box.padding_bottom + self.music_box.padding_top
 
@@ -161,30 +161,41 @@ class Staves:
     def staves_per_page(self) -> int:
         """How many staves (stripes) can fit on a single page.
         """
+        assert self.page_height > 0
+        assert self.stave_width > 0
+        assert self.stave_width < self.page_height
         return math.floor((self.page_height - self.margin * 2) / self.stave_width)
 
     @cached_property
     def stave_length(self) -> float:
         """How long each stave (stripe) is (in mm).
         """
+        assert self.margin >= 0
         return self.page_width - self.margin * 2
 
     @cached_property
     def total_length(self) -> float:
         """The summary length of all stripes to be generated in mm.
         """
+        assert self.melody.max_time >= 0
+        assert self.speed > 0
+        assert self.start_width >= 0
         return self.melody.max_time / self.speed + self.start_width
 
     @cached_property
     def staves_count(self) -> int:
         """How many staves (stripes) the are to generate.
         """
+        assert self.total_length >= 0
+        assert self.stave_length > 0
         return math.ceil(self.total_length / self.stave_length)
 
     @cached_property
     def pages_count(self) -> int:
         """How many pages the are to generate.
         """
+        assert self.staves_count >= 0
+        assert self.staves_per_page >= 1
         return math.ceil(self.staves_count / self.staves_per_page)
 
     @cached_property
@@ -234,6 +245,7 @@ class Staves:
     def _write_stave(self, dwg: svg.SVG, page: int, stave: int, offset: int) -> int:
         first_stave = page == 0 and stave == 0
         line_offset = stave * self.stave_width + self.margin * 2
+        assert line_offset >= 0
         if dwg.elements is None:
             dwg.elements = []
         emit = dwg.elements.append
@@ -245,7 +257,9 @@ class Staves:
         # draw caption (melody name and stave number)
         if self.write_captions:
             stave_crossnumber = page * self.staves_per_page + stave + 1
+            assert line_offset >= 1
             y_top = line_offset - self.music_box.padding_top
+            assert y_top >= 0
             caption = self.name if stave_crossnumber == 1 else f"#{stave_crossnumber}"
             dwg.elements.extend(self._write_text(
                 x=self.margin * 2,
@@ -258,6 +272,7 @@ class Staves:
         # draw lines
         for i, note in enumerate(self.music_box.notes):
             line_y = i * self.music_box.pitch + line_offset
+            assert line_y >= 0
             margin_left = self.margin
             if first_stave:
                 margin_left += self.start_width
@@ -285,18 +300,21 @@ class Staves:
         latest_notes: dict[int, float] = dict()
         for sound in self.melody.sounds[offset:]:
             sound_offset = sound.time / self.speed - offset_time
-            assert sound_offset >= 0, f"{sound.time} / {self.speed} - {offset_time} >= 0"
+            assert sound_offset >= 0
             if sound_offset > self.stave_length:
                 break
 
             # place the sound, fill black for exact placement and fill red for transposed
             fill: str | None = "black"
             note_number = sound.note + trans
+            assert note_number > 0
+            assert note_number < 1000
             if self.music_box.contains_note(note_number):
                 note_pos = self.music_box.get_note_pos(note_number)
             else:
                 note_pos = self.music_box.guess_note_pos(note_number)
                 fill = "red"
+            assert fill in ("red", "black")
 
             # outline instead of fill if note is too close to the previous one
             stroke = None
@@ -320,6 +338,7 @@ class Staves:
                 stroke_width=stroke_width,
             ))
             offset += 1
+        assert offset >= 0
         return offset
 
     def _write_borders(
@@ -399,6 +418,10 @@ class Staves:
         color: str,
         size: float,
     ) -> Iterator[svg.Element]:
+        assert x > 0
+        assert y > 0
+        assert x < self.page_width
+        assert y < self.page_height
         if not self.hershey:
             yield svg.Text(
                 text=text, x=mm(x), y=mm(y),
