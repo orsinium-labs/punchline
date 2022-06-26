@@ -1,0 +1,8 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - python3.9 -m punchline --no-notes --no-lines --hershey {{.CLI_ARGS}}

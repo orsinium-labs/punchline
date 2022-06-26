@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cached_property, lru_cache
 import math
 from pathlib import Path
 import re
@@ -32,6 +32,19 @@ def camel_to_snake(name: str) -> str:
     return name
 
 
+@lru_cache(maxsize=4)
+def get_font(size: float) -> HersheyFonts:
+    """Load hershey font that can be used to render text as a set of lines.
+
+    https://github.com/apshu/HersheyFonts
+    """
+    from HersheyFonts import HersheyFonts  # pip3 install hershey-fonts
+    font = HersheyFonts()
+    font.load_default_font("rowmans")
+    font.normalize_rendering(size)
+    return font
+
+
 @dataclass
 class Staves:
     music_box: MusicBox
@@ -39,7 +52,8 @@ class Staves:
 
     output_path: Path = Path('output')
     margin: float = 5.
-    font_size: float = 2.
+    font_size_notes: float = 2.
+    font_size_captions: float = 4.
     speed: float = 67.
     page_width: float = 297.
     page_height: float = 210.
@@ -71,8 +85,12 @@ class Staves:
             help='how densly the holes should be packed (ticks/mm)',
         )
         parser.add_argument(
-            '--font-size', type=float, default=cls.font_size,
-            help='size of all text on the page (in mm)',
+            '--font-size-notes', type=float, default=cls.font_size_notes,
+            help='size of note names on the left from staves (in mm)',
+        )
+        parser.add_argument(
+            '--font-size-captions', type=float, default=cls.font_size_captions,
+            help='size of captions (stave number and melody name) on staves (in mm)',
         )
         parser.add_argument(
             '--page-width', type=float, default=cls.page_width,
@@ -119,7 +137,8 @@ class Staves:
             output_path=args.output,
             margin=args.margin,
             speed=args.speed,
-            font_size=args.font_size,
+            font_size_notes=args.font_size_notes,
+            font_size_captions=args.font_size_captions,
             page_width=args.page_width,
             page_height=args.page_height,
             start_width=args.start_width,
@@ -167,18 +186,6 @@ class Staves:
         """How many pages the are to generate.
         """
         return math.ceil(self.staves_count / self.staves_per_page)
-
-    @cached_property
-    def font(self) -> HersheyFonts:
-        """Load hershey font that can be used to render text as a set of lines.
-
-        https://github.com/apshu/HersheyFonts
-        """
-        from HersheyFonts import HersheyFonts  # pip3 install hershey-fonts
-        font = HersheyFonts()
-        font.load_default_font("rowmans")
-        font.normalize_rendering(self.font_size)
-        return font
 
     @cached_property
     def last_stave_length(self) -> float:
@@ -244,6 +251,7 @@ class Staves:
                 y=y_top + self.stave_width - 1,
                 text=caption,
                 color="blue",
+                size=self.font_size_captions,
             ))
 
         # draw lines
@@ -265,8 +273,9 @@ class Staves:
                 dwg.elements.extend(self._write_text(
                     text=note.letter,
                     x=self.margin - 2,
-                    y=line_y + self.font_size / 2,
+                    y=line_y + self.font_size_notes / 2,
                     color="orange",
+                    size=self.font_size_notes,
                 ))
 
         # draw cut circles
@@ -388,14 +397,16 @@ class Staves:
         y: float,
         text: str,
         color: str,
+        size: float,
     ) -> Iterator[svg.Element]:
         if not self.hershey:
             yield svg.Text(
                 text=text, x=mm(x), y=mm(y),
-                fill=color, font_size=mm(self.font_size),
+                fill=color, font_size=mm(size),
             )
             return
-        for (dx1, dy1), (dx2, dy2) in self.font.lines_for_text(text):
+        font = get_font(size=size)
+        for (dx1, dy1), (dx2, dy2) in font.lines_for_text(text):
             yield svg.Line(
                 x1=mm(x + dx1),
                 y1=mm(y - dy1),
