@@ -232,6 +232,7 @@ class Staves:
         return offset
 
     def _write_stave(self, dwg: svg.SVG, page: int, stave: int, offset: int) -> int:
+        first_stave = page == 0 and stave == 0
         line_offset = stave * self.stave_width + self.margin * 2
         if dwg.elements is None:
             dwg.elements = []
@@ -258,7 +259,7 @@ class Staves:
         for i, note in enumerate(self.music_box.notes):
             line_y = i * self.music_box.pitch + line_offset
             margin_left = self.margin
-            if page == 0 and stave == 0:
+            if first_stave:
                 margin_left += self.start_width
             if self.write_lines:
                 emit(svg.Line(
@@ -279,13 +280,12 @@ class Staves:
                 ))
 
         # draw cut circles
-        offset_time = (page * self.staves_per_page + stave) * self.stave_length
-        if page == 0 and stave == 0:
-            offset_time -= self.start_width
+        offset_time = (page * self.staves_per_page + stave) * self.stave_length - self.start_width
         trans = self.melody.best_transpose.shift
         latest_notes: dict[int, float] = dict()
         for sound in self.melody.sounds[offset:]:
             sound_offset = sound.time / self.speed - offset_time
+            assert sound_offset >= 0, f"{sound.time} / {self.speed} - {offset_time} >= 0"
             if sound_offset > self.stave_length:
                 break
 

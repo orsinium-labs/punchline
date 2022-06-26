@@ -5,4 +5,4 @@ version: '3'
 tasks:
   default:
     cmds:
-      - python3.9 -m punchline --no-notes --no-lines --hershey {{.CLI_ARGS}}
+      - python3.9 -m punchline --no-notes --no-lines --hershey --input ./midi/{{.CLI_ARGS}}
