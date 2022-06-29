@@ -41,6 +41,7 @@ class Melody:
     max_pause: int = 2000
     start_pause: int = 200
     cut_pause: int = 50_000
+    transpose: bool = True
     tracks: frozenset = frozenset(range(40))
 
     @classmethod
@@ -56,6 +57,10 @@ class Melody:
         parser.add_argument(
             '--transpose-upper', type=int, default=cls.transpose_upper,
             help='the highest transposition to try',
+        )
+        parser.add_argument(
+            '--no-transpose', action='store_true',
+            help='do only octave transposition (in steps of 12 notes)',
         )
         parser.add_argument(
             '--tracks', nargs='*', type=int, default=[],
@@ -83,6 +88,7 @@ class Melody:
             max_pause=args.max_pause,
             start_pause=args.start_pause,
             cut_pause=args.cut_pause,
+            transpose=not args.no_transpose,
             tracks=frozenset(args.tracks) or cls.tracks,
             music_box=music_box,
         )
@@ -166,6 +172,8 @@ class Melody:
         # Better to transpose with preserving most of the notes.
         # If full octave transposition doesn't fit just a bit, roll with it.
         if best_transpose.ratio >= .90:
+            return best_transpose
+        if not self.transpose:
             return best_transpose
         return self._get_best_transpose(
             range(self.transpose_lower, self.transpose_upper),
